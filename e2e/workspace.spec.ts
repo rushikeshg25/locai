@@ -5,7 +5,11 @@ test("loads desktop and mobile without overflow or model download", async ({
   const external: string[] = [];
   const errors: string[] = [];
   page.on("request", (request) => {
-    if (!request.url().startsWith("http://127.0.0.1:4173"))
+    if (
+      !request
+        .url()
+        .startsWith(`http://127.0.0.1:${process.env.E2E_PORT ?? 4175}`)
+    )
       external.push(request.url());
   });
   page.on("pageerror", (error) => errors.push(error.message));
@@ -27,7 +31,7 @@ test("loads desktop and mobile without overflow or model download", async ({
   }
   await expect(page.getByText("Make it yours")).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Fix grammar →" }),
+    page.getByRole("button", { name: "Send message" }),
   ).toBeDisabled();
   expect(external).toEqual([]);
   expect(errors).toEqual([]);
@@ -66,7 +70,7 @@ test("model picker keeps selections open and dismisses outside or with Escape", 
   await trigger.click();
   await page.getByRole("radio", { name: /Larger/ }).check();
   await expect(picker).toHaveAttribute("open", "");
-  await page.getByLabel("Your text").click();
+  await page.getByRole("heading", { name: "Local Writer" }).click();
   await expect(picker).not.toHaveAttribute("open");
   await trigger.click();
   await page.keyboard.press("Escape");

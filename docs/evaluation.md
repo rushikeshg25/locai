@@ -18,17 +18,29 @@ The last check downloads approximately 280 MB plus runtime/tokenizer files. It r
 
 ## Current evidence (2026-11-04)
 
-- Type checking and production build passed.
-- Fifteen unit/component/runtime-adapter tests passed, including stale request isolation, cancellation, timeout, errors, protected terms, copy and undo.
-- Two Chromium browser tests passed: desktop/mobile layouts without horizontal overflow; offline app reload without persisted drafts. Startup produced no external requests.
-- Real-model test attempted but failed at the capability gate: automated Chromium had no usable WebGPU adapter. No model downloaded. Real inference, offline model reload, latency and quality are unverified.
-- `npm audit --omit=dev`: zero vulnerabilities. Full audit: 2 low and 8 moderate development-tool advisories in the Workbox build dependency tree. `npm audit fix` could not resolve them without incompatible changes. Do not expose development tooling to untrusted build inputs.
+- Type checks and the production build pass. The WebLLM bundle remains large; Vite reports a size warning.
+- Unit/component tests cover conversation context, cancellation, stale output, safe Markdown, opt-in storage, attachments, server stream parsing and errors.
+- Chrome browser tests exercise desktop/mobile light and dark layouts, offline app reload, model-picker dismissal, a growing composer, conversational requests, attachments, branches and saved-chat reload. Server responses in these checks are controlled fixtures.
+- This machine's automated Chrome reports no usable WebGPU adapter. Real browser-model inference, offline model reload, speed and quality remain unverified. Those tests are explicit opt-ins and skipped in the normal suite.
+
+## Collect real outputs
+
+Build the app, then run on a machine whose automated browser exposes WebGPU:
+
+```sh
+RUN_EVAL=1 EVAL_MODEL=small npx playwright test e2e/evaluation.spec.ts
+RUN_EVAL=1 EVAL_MODEL=large npx playwright test e2e/evaluation.spec.ts
+```
+
+Use `E2E_CHANNEL=chrome` if using installed Chrome. Each run loads the selected model and exercises all 38 writing cases through the production interface. The Playwright test attaches JSON containing outputs, model size, browser user agent, load time, first displayed text time and completion time. Every output starts as `unreviewed`; the test does not grade meaning or claim quality. Timing includes UI overhead. Each run uses a fresh browser profile, so it is a cold-load test; measure warm loads separately.
+
+Also manually test Chat with a follow-up that depends on a previous answer, a model switch, a stopped answer, and a long thread that excludes old context. Confirm that the model acknowledges uncertainty instead of fabricating missing context.
 
 ## Manual quality comparison
 
 Use `evaluation-cases.json` for each model. Record device, browser, model ID, cold download/load time, warm load time, first-token time and completion time. Review output for factual preservation, action compliance, readability and unwanted additions. Run both ordinary inputs and the maximum supported input size.
 
-Provisional gate: at least 27 of 30 outputs are useful without rewriting, no observed changes to names/numbers/dates/negation/commitments, and a 200-word request completes within 15 seconds after model loading on the target laptop. If neither model passes, narrow the supported actions or evaluate another compatible model. Do not label these gates passed without measured results.
+Provisional gate: at least 35 of 38 outputs are useful without rewriting, no observed changes to names/numbers/dates/negation/commitments, and a 200-word request completes within 15 seconds after model loading on the target laptop. If neither model passes, narrow the supported actions or evaluate another compatible model. Do not label these gates passed without measured results.
 
 Also test interrupted downloads, low storage, cache eviction, GPU loss, multiple open tabs and offline model initialization. A cached weight indicator alone does not prove that tokenizer, config and Wasm files are cached.
 

@@ -178,5 +178,53 @@
     "action": "format",
     "text": "Notes: budget $450. Approved $300. Remaining approval pending.",
     "review": "Preserve facts and uncertainty; follow action; add no unsupported detail."
+  },
+  {
+    "id": "simplify-1",
+    "action": "simplify",
+    "text": "The PostgreSQL upgrade is contingent upon the successful completion of validation.",
+    "review": "Preserve facts, uncertainty and boundaries. Follow the action without adding promises or unsupported detail."
+  },
+  {
+    "id": "simplify-2",
+    "action": "simplify",
+    "text": "We have not established the cause of the 80 ms delay.",
+    "review": "Preserve facts, uncertainty and boundaries. Follow the action without adding promises or unsupported detail."
+  },
+  {
+    "id": "expand-1",
+    "action": "expand",
+    "text": "Maya will test Tuesday. Rollout is not approved.",
+    "review": "Preserve facts, uncertainty and boundaries. Follow the action without adding promises or unsupported detail."
+  },
+  {
+    "id": "expand-2",
+    "action": "expand",
+    "text": "The invoice is $300. Payment is pending.",
+    "review": "Preserve facts, uncertainty and boundaries. Follow the action without adding promises or unsupported detail."
+  },
+  {
+    "id": "direct-1",
+    "action": "direct",
+    "text": "I was wondering if perhaps you might review PR #42 before Friday. Please do not merge it.",
+    "review": "Preserve facts, uncertainty and boundaries. Follow the action without adding promises or unsupported detail."
+  },
+  {
+    "id": "direct-2",
+    "action": "direct",
+    "text": "We may be late. We cannot promise Monday.",
+    "review": "Preserve facts, uncertainty and boundaries. Follow the action without adding promises or unsupported detail."
+  },
+  {
+    "id": "warmer-1",
+    "action": "warmer",
+    "text": "Send the $80 receipt to Maya.",
+    "review": "Preserve facts, uncertainty and boundaries. Follow the action without adding promises or unsupported detail."
+  },
+  {
+    "id": "warmer-2",
+    "action": "warmer",
+    "text": "We cannot extend the deadline beyond 12 December.",
+    "review": "Preserve facts, uncertainty and boundaries. Follow the action without adding promises or unsupported detail."
   }
 ]
