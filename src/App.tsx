@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { actions, inputError, wordCount, type Action } from './actions';
 import { LocalWriter, type Writer } from './inference';
 import { checkGPU, models } from './models';
+import { ChangeReview } from './ChangeReview';
 import { missingTerms } from './prompts';
 import { useWriter } from './useWriter';
 export default function App({ writer: supplied, gpuCheck = checkGPU }: { writer?: Writer; gpuCheck?: () => Promise<boolean> }) {
@@ -15,6 +16,7 @@ export default function App({ writer: supplied, gpuCheck = checkGPU }: { writer?
   const [terms, setTerms] = useState('');
   const [instruction, setInstruction] = useState('');
   const [requestSource, setRequestSource] = useState('');
+  const [resultAction, setResultAction] = useState<Action>('grammar');
   const [requestTerms, setRequestTerms] = useState('');
   const [feedback, setFeedback] = useState('');
   const [previous, setPrevious] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export default function App({ writer: supplied, gpuCheck = checkGPU }: { writer?
   const selected = models.find(item => item.id === model)!;
   useEffect(() => { let alive = true; gpuCheck().then(value => { if (alive) setSupported(value); }, () => { if (alive) setSupported(false); }); return () => { alive = false; }; }, [gpuCheck]);
   useEffect(() => { let alive = true; setCached('Checking cache…'); writer.cached(model).then(value => { if (alive) setCached(value ? 'Weights cached. Offline availability depends on all runtime files being cached.' : 'Model not cached. First load needs internet.'); }, () => { if (alive) setCached('Cache unavailable. Check browser storage permissions.'); }); return () => { alive = false; }; }, [writer, model, session.status]);
-  function run() { const error = inputError(text); setFeedback(error ?? ''); if (!error) { setRequestSource(text); setRequestTerms(terms); void session.run({ text, action, terms, instruction }); } }
+  function run() { const error = inputError(text); setFeedback(error ?? ''); if (!error) { setRequestSource(text); setResultAction(action); setRequestTerms(terms); void session.run({ text, action, terms, instruction }); } }
   async function copy() { try { await navigator.clipboard.writeText(session.output); setFeedback('Copied.'); } catch { setFeedback('Clipboard access failed. Select the result and copy it manually.'); } }
   return <main>
     <header><a className="brand" href="./">◈ Local Writer</a><span className="badge">On-device AI</span></header>
@@ -43,6 +45,7 @@ export default function App({ writer: supplied, gpuCheck = checkGPU }: { writer?
       <div className="editor"><div className="editor-heading"><label htmlFor="source">Your text</label><span>{wordCount(text)} / 500 words</span></div><textarea id="source" value={text} disabled={busy} onChange={event => setText(event.target.value)} placeholder="Paste that rough draft here…"/><div className="editor-footer"><button className="secondary" disabled={busy} onClick={() => { setText(''); session.setOutput(''); setPrevious(null); setFeedback(''); }}>Clear</button>{previous !== null && <button className="secondary" disabled={busy} onClick={() => { setText(previous); setPrevious(null); }}>Undo input change</button>}</div></div>
       <div className="editor"><div className="editor-heading"><label htmlFor="result">Your result</label><span>{session.status === 'writing' ? 'Writing…' : 'Review before using'}</span></div><textarea id="result" value={session.output} disabled={busy} onChange={event => session.setOutput(event.target.value)} placeholder="A clearer version will appear here."/><div className="editor-footer"><button className="secondary" disabled={busy || !session.output} onClick={copy}>Copy result</button><button className="secondary" disabled={busy || !session.output} onClick={() => { setPrevious(text); setText(session.output); session.setOutput(''); }}>Use as input</button></div></div>
     </section>
+    {session.output && !busy && resultAction === 'grammar' && <ChangeReview source={requestSource} result={session.output} />}
     <div className="run-bar"><p>Check names, numbers, dates, and meaning.</p>{busy ? <button onClick={() => session.stop()}>Stop</button> : <button disabled={session.status !== 'ready' || Boolean(inputError(text))} onClick={run}>{actions[action].label} →</button>}</div>
     {inputError(text) && text.length > 0 && <p role="alert">{inputError(text)}</p>}
     {(session.error || feedback) && <p role="status">{session.error || feedback}</p>}
