@@ -66,7 +66,7 @@ export function prepareMessages(request: WritingRequest) {
   const latest = messages[messages.length - 1];
   if (cost(system) + cost(latest) > budget) {
     throw new Error(
-      "This message and its attachments exceed the model's conservative context budget. Shorten them or choose a model server with a larger context window.",
+      "This message and its attachments exceed the model's conservative context budget. Shorten the message or remove attachments before trying again.",
     );
   }
   const history = messages.slice(1, -1);

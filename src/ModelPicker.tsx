@@ -1,5 +1,5 @@
 import { Button } from "./Button";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { models } from "./models";
 import type { Writer } from "./inference";
 import { Icon } from "./Icon";
@@ -12,17 +12,9 @@ export function ModelPicker({
   onLoad,
   onRemove,
   onUnload,
-  provider,
-  onProvider,
-  serverLabel,
-  serverPanel,
   autoLoad,
   onAutoLoad,
 }: {
-  provider: "browser" | "server";
-  onProvider: (value: "browser" | "server") => void;
-  serverLabel: string;
-  serverPanel: ReactNode;
   autoLoad: boolean;
   onAutoLoad: (value: boolean) => void;
   writer: Writer;
@@ -39,23 +31,22 @@ export function ModelPicker({
   const busy = ["loading", "writing", "stopping", "removing"].includes(status);
   useEffect(() => {
     let alive = true;
-    if (provider === "browser")
-      Promise.all(
-        models.map(async (item) => {
-          try {
-            return [item.id, await writer.cached(item.id)] as const;
-          } catch {
-            return [item.id, null] as const;
-          }
-        }),
-      ).then((entries) => {
-        if (alive) setCache(Object.fromEntries(entries));
-      });
+    Promise.all(
+      models.map(async (item) => {
+        try {
+          return [item.id, await writer.cached(item.id)] as const;
+        } catch {
+          return [item.id, null] as const;
+        }
+      }),
+    ).then((entries) => {
+      if (alive) setCache(Object.fromEntries(entries));
+    });
     if (status === "ready" && picker.current) picker.current.open = false;
     return () => {
       alive = false;
     };
-  }, [writer, status, model, provider]);
+  }, [writer, status, model]);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
       if (
@@ -86,122 +77,95 @@ export function ModelPicker({
       >
         <Icon name="model" />
         <span className="model-name">
-          {provider === "server"
-            ? serverLabel || "Local server"
-            : (models
-                .find((item) => item.id === model)
-                ?.label.split(" · ")[1] ?? model)}
+          {models.find((item) => item.id === model)?.label.split(" · ")[1] ??
+            model}
         </span>
         <span aria-hidden="true">⌄</span>
       </summary>
       <section className="model-panel" aria-label="Model setup">
         <h2>Models</h2>
-        <div className="mode-switch" role="group" aria-label="Model provider">
+        <p className="muted">
+          {supported === true
+            ? "WebGPU available"
+            : "WebGPU unavailable or checking"}{" "}
+          · Small models can make mistakes on complex requests.
+        </p>
+        <div
+          role="radiogroup"
+          aria-label="Writing model"
+          className="model-catalog"
+        >
+          {models.map((item) => (
+            <label key={item.id} className="model-option">
+              <input
+                type="radio"
+                name="model"
+                checked={item.id === model}
+                disabled={busy}
+                onChange={() => onSelect(item.id)}
+              />
+              <span>
+                <strong>{item.label}</strong>
+                <small>
+                  {item.download} · {item.memory}
+                </small>
+                <small>
+                  {item.id === model && status === "ready"
+                    ? "Loaded in memory"
+                    : cache[item.id] === true
+                      ? "Weights downloaded"
+                      : cache[item.id] === false
+                        ? "Not downloaded"
+                        : "Checking cache / unavailable"}
+                </small>
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="muted">
+          Offline use requires weights, tokenizer, config and runtime files.
+        </p>
+        <div className="model-controls">
           <Button
-            className="secondary"
-            aria-pressed={provider === "browser"}
-            disabled={busy}
-            onClick={() => onProvider("browser")}
+            disabled={!supported || busy || status === "ready"}
+            onClick={onLoad}
           >
-            In browser
+            <Icon name="download" />
+            {status === "ready"
+              ? "Model ready"
+              : cache[model]
+                ? "Load selected model"
+                : "Download / load model"}
           </Button>
           <Button
             className="secondary"
-            aria-pressed={provider === "server"}
-            disabled={busy}
-            onClick={() => onProvider("server")}
+            disabled={busy || status !== "ready"}
+            onClick={onUnload}
           >
-            Local server
+            Unload
+          </Button>
+          <Button
+            className="secondary"
+            disabled={busy || cache[model] !== true}
+            onClick={onRemove}
+          >
+            <Icon name="clear" />
+            Remove model cache
           </Button>
         </div>
-        {provider === "server" ? (
-          serverPanel
-        ) : (
-          <>
-            <p className="muted">
-              {supported === true
-                ? "WebGPU available"
-                : "WebGPU unavailable or checking"}{" "}
-              · Small models can make mistakes on complex requests.
-            </p>
-            <div
-              role="radiogroup"
-              aria-label="Writing model"
-              className="model-catalog"
-            >
-              {models.map((item) => (
-                <label key={item.id} className="model-option">
-                  <input
-                    type="radio"
-                    name="model"
-                    checked={item.id === model}
-                    disabled={busy}
-                    onChange={() => onSelect(item.id)}
-                  />
-                  <span>
-                    <strong>{item.label}</strong>
-                    <small>
-                      {item.download} · {item.memory}
-                    </small>
-                    <small>
-                      {item.id === model && status === "ready"
-                        ? "Loaded in memory"
-                        : cache[item.id] === true
-                          ? "Weights downloaded"
-                          : cache[item.id] === false
-                            ? "Not downloaded"
-                            : "Checking cache / unavailable"}
-                    </small>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <p className="muted">
-              Offline use requires weights, tokenizer, config and runtime files.
-            </p>
-            <div className="model-controls">
-              <Button
-                disabled={!supported || busy || status === "ready"}
-                onClick={onLoad}
-              >
-                <Icon name="download" />
-                {status === "ready"
-                  ? "Model ready"
-                  : cache[model]
-                    ? "Load selected model"
-                    : "Download / load model"}
-              </Button>
-              <Button
-                className="secondary"
-                disabled={busy || status !== "ready"}
-                onClick={onUnload}
-              >
-                Unload
-              </Button>
-              <Button
-                className="secondary"
-                disabled={busy || cache[model] !== true}
-                onClick={onRemove}
-              >
-                <Icon name="clear" />
-                Remove model cache
-              </Button>
-            </div>
-            <label>
-              <input
-                type="checkbox"
-                checked={autoLoad}
-                disabled={busy}
-                onChange={(event) => onAutoLoad(event.target.checked)}
-              />{" "}
-              Automatically load downloaded weights on startup
-            </label>
-            <p className="muted">
-              Loading may still need internet for missing runtime files.
-            </p>
-            <StorageInfo refresh={status} />
-          </>
-        )}
+        <label>
+          <input
+            type="checkbox"
+            checked={autoLoad}
+            disabled={busy}
+            onChange={(event) => onAutoLoad(event.target.checked)}
+          />{" "}
+          Automatically load downloaded weights on startup
+        </label>
+        <p className="muted">
+          Loading may still need internet for missing runtime files.
+        </p>
+        <StorageInfo refresh={status} />
       </section>
     </details>
   );

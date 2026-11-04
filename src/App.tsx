@@ -37,8 +37,6 @@ import {
   readAttachments,
 } from "./storage";
 import { LoadingStatus } from "./LoadingStatus";
-import { ServerWriter, type ServerConfig } from "./server";
-import { ServerSettings } from "./ServerSettings";
 import { getPreference, setPreference, preferredModel } from "./preferences";
 import { prepareMessages, missingTerms } from "./prompts";
 export default function App({
@@ -50,12 +48,7 @@ export default function App({
 }) {
   const { theme, toggleTheme } = useTheme();
   const [browserWriter] = useState(() => supplied ?? new LocalWriter());
-  const [serverWriter] = useState(() => new ServerWriter());
-  const [provider, setProvider] = useState<"browser" | "server">("browser");
-  const writer = provider === "browser" ? browserWriter : serverWriter;
-  const [serverConfig, setServerConfig] = useState<ServerConfig>(
-    serverWriter.config,
-  );
+  const writer = browserWriter;
   const [autoLoad, setAutoLoad] = useState(
     () => getPreference("auto-load", "false") === "true",
   );
@@ -143,21 +136,9 @@ export default function App({
   const busy = ["loading", "writing", "stopping", "removing"].includes(
     session.status,
   );
-  const selected =
-    provider === "browser"
-      ? models.find((item) => item.id === model)!
-      : {
-          id: serverConfig.model,
-          label: `${serverConfig.model} · local server`,
-        };
+  const selected = models.find((item) => item.id === model)!;
   useEffect(() => {
-    if (
-      autoAttempted.current ||
-      supported !== true ||
-      !autoLoad ||
-      provider !== "browser"
-    )
-      return;
+    if (autoAttempted.current || supported !== true || !autoLoad) return;
     let alive = true;
     browserWriter.cached(model).then(
       (cached) => {
@@ -173,7 +154,7 @@ export default function App({
     return () => {
       alive = false;
     };
-  }, [supported, autoLoad, provider, model, browserWriter]);
+  }, [supported, autoLoad, model, browserWriter]);
   useEffect(() => {
     let alive = true;
     gpuCheck().then(
@@ -258,7 +239,7 @@ export default function App({
       terms: requestTerms,
       instruction: requestInstruction,
       history: conversationHistory(prefix),
-      contextWindow: provider === "server" ? serverConfig.contextWindow : 4096,
+      contextWindow: 4096,
     };
     let budget;
     try {
@@ -333,8 +314,7 @@ export default function App({
         terms,
         instruction,
         history: conversationHistory(resend ?? chat.messages),
-        contextWindow:
-          provider === "server" ? serverConfig.contextWindow : 4096,
+        contextWindow: 4096,
       });
       contextLabel = `Context estimate: ${budget.used} / ${budget.budget} byte units${budget.omitted ? ` · ${budget.omitted} older messages excluded` : ""}`;
     } catch (cause) {
@@ -484,7 +464,7 @@ export default function App({
           </select>
         </label>
       )}
-      {supported === false && provider === "browser" && (
+      {supported === false && (
         <p role="alert" className="banner">
           WebGPU is unavailable. Use a recent desktop browser with hardware
           acceleration, on HTTPS or localhost.
@@ -932,12 +912,6 @@ export default function App({
                 model={model}
                 status={session.status}
                 supported={supported}
-                provider={provider}
-                onProvider={(value) => {
-                  session.stop("");
-                  setProvider(value);
-                }}
-                serverLabel={serverConfig.model}
                 autoLoad={autoLoad}
                 onAutoLoad={(value) => {
                   setAutoLoad(value);
@@ -946,19 +920,6 @@ export default function App({
                       "Could not save the automatic loading preference.",
                     );
                 }}
-                serverPanel={
-                  <ServerSettings
-                    config={serverConfig}
-                    busy={busy}
-                    ready={session.status === "ready"}
-                    onConnect={(config) => {
-                      serverWriter.configure(config);
-                      setServerConfig(config);
-                      void session.load(config.model);
-                    }}
-                    onDisconnect={() => session.stop("")}
-                  />
-                }
                 onSelect={(id) => {
                   session.stop("");
                   setModel(id);
@@ -1035,9 +996,9 @@ export default function App({
           browser until deleted.
         </p>
         <p>
-          Model downloads contact Hugging Face and the runtime host.
-          Local-server mode sends messages and attachments to your configured
-          server. Review AI answers before using them.
+          Model downloads contact Hugging Face and the runtime host. Messages
+          and attachments are processed in this browser. No server or account is
+          required. Review AI answers before using them.
         </p>
         <form method="dialog">
           <Button>
