@@ -59,7 +59,7 @@ test("chat context, Markdown, attachments, branching and opt-in persistence", as
     .locator("option")
     .last()
     .getAttribute("value");
-  await page.getByLabel("Conversation", { exact: true }).selectOption(saved!);
+  await page.locator(`[data-chat-id="${saved}"]`).click();
   await expect(page.locator(".assistant")).toHaveCount(2);
   await page.getByRole("button", { name: "Make temporary" }).click();
   await page.reload();

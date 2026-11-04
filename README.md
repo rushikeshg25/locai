@@ -1,6 +1,6 @@
 # Local Writer
 
-A local chat and writing workspace. Run small models in the browser with WebGPU, or connect an existing model server on this computer.
+A private chat and writing workspace powered entirely by browser models. WebGPU runs inference on your device; no model server, account, API key or separate app is required.
 
 ## Run
 
@@ -23,6 +23,7 @@ Open the URL printed by Vite. Updates activate after existing app tabs close, so
 ## Chat and writing
 
 - In Write mode, **Writing preferences** accepts protected terms and a custom instruction. Missing protected terms are flagged; retries and edit/resend retain the original preferences. Preferences are stored with the request only when you save its conversation.
+- The desktop sidebar searches conversation titles and messages. On narrow screens, use the Conversation selector.
 - **Chat** is the default. Completed turns provide context for follow-up questions. **Write** offers ten editing actions, with original/revised word-level comparison.
 - Enter sends; Shift+Enter inserts a newline. The composer grows with the draft and respects IME composition.
 - Replies render Markdown, tables and code with a copy button. Generated HTML is disabled and remote images are not fetched.
@@ -48,23 +49,13 @@ Loading reports runtime progress, elapsed time and a stalled-update hint. The ru
 
 If the runtime host is slow, set `VITE_RUNTIME_BASE_URL` to a trailing-slash URL in ignored `.env.local`, place the exact Wasm files named by the installed WebLLM configuration at that URL, and rebuild. Weights still come from Hugging Face. Without this setting, WebLLM uses its default runtime host. Do not commit downloaded model assets.
 
-## Optional local server
-
-Start Ollama or llama.cpp separately and install a model with its own tools. In Models, select **Local server**, enter the OpenAI-compatible base URL (for example `http://localhost:11434/v1`), choose **Find installed models**, select a model, then connect. Only loopback hosts (`localhost`, `127.0.0.1`, `::1`) are supported; there is no API-key storage.
-
-The server must allow this app's exact origin through CORS. For example, an Ollama process serving the preview can use `OLLAMA_ORIGINS=http://localhost:4174`; use the actual origin in your address bar. Configure your existing service instead of starting a second process on its port. Browser private-network or mixed-content rules can also block access.
-
-The context-window field must match the server's actual configuration. It only controls outgoing history; it does not change server settings. Connect checks that the model exists; the first reply may still require model warm-up. Disconnect ends this app's connection and does not shut down the server.
-
-Protocol references: [Ollama compatibility](https://github.com/ollama/ollama/blob/main/docs/api/openai-compatibility.mdx), [llama.cpp server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md).
-
 ## Privacy and saved chats
 
 Chats and drafts are temporary by default. **Save on device** stores the current conversation and later changes in this browser's local storage, including attachments. They are not encrypted by the app. **Make temporary** removes that saved copy while preserving the current tab's copy. Delete removes the selected chat and its saved copy; Export downloads Markdown. Browser site-data controls remove all site storage, including models and saved chats.
 
 If another tab changes saved chats, the affected copies in this tab become temporary to avoid silently overwriting the other tab's changes. Save again deliberately if you want to keep your copy. Browser quota failures leave the live conversation available for export.
 
-Browser inference stays on this device. Local-server mode sends conversation context and attachments to the configured server; that server's own behavior determines further processing or retention. Model downloads contact Hugging Face and the runtime host. There are no accounts or analytics. Clipboard writes require a Copy action. Theme, selected browser model and the automatic-load preference are stored separately from chats.
+Messages and attachments are processed in this browser. Model downloads contact Hugging Face and the runtime host. There are no accounts or analytics. Clipboard writes require a Copy action. Theme, selected browser model and the automatic-load preference are stored separately from chats.
 
 ## Checks and model quality
 
@@ -78,6 +69,8 @@ npm run test:e2e
 npm audit --omit=dev
 ```
 
-Browser tests use a dedicated preview on port 4175. Override with `E2E_PORT`; use `E2E_CHANNEL=chrome` to test installed Chrome. Local-server browser tests mock the HTTP boundary, while adapter tests exercise split streaming events and cancellation. They do not prove real server or model quality.
+Browser tests use a dedicated preview on port 4175. Override with `E2E_PORT`; use `E2E_CHANNEL=chrome` to test installed Chrome. Chat browser tests replace the inference worker with a controlled fixture while exercising the production WebLLM client. They do not prove real inference, GPU compatibility or model quality.
 
 See [evaluation instructions](docs/evaluation.md) and the [38 writing cases](docs/evaluation-cases.json) for real-model checks. The 0.5B default is a smaller download, not a measured quality winner. Review facts and meaning before using model output. Web search, tools, voice and executable artifacts are not included.
+
+The browser-only conversion is paused after five of ten requested commits. See [the next-session checklist](docs/next-session.md).

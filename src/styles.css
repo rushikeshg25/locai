@@ -766,3 +766,75 @@ del {
   border: 1px solid var(--line);
   font-size: 12px;
 }
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  max-width: 1400px;
+  margin: auto;
+}
+.app-shell .workspace {
+  width: 100%;
+  min-width: 0;
+}
+.conversation-sidebar {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 14px;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+.conversation-sidebar h2 {
+  font-size: 15px;
+  margin: 0;
+}
+.conversation-sidebar input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 9px;
+  font-size: 12px;
+}
+.conversation-sidebar nav {
+  flex: 1;
+  overflow: auto;
+}
+.conversation-sidebar nav button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  margin-bottom: 5px;
+}
+.conversation-sidebar button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+.conversation-sidebar small,
+.conversation-sidebar p {
+  font-size: 11px;
+}
+.conversation-sidebar [aria-current="page"] {
+  background: var(--soft);
+  color: var(--text);
+}
+@media (min-width: 901px) {
+  .conversation-switch {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .app-shell {
+    display: block;
+  }
+  .conversation-sidebar {
+    display: none;
+  }
+}

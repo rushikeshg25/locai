@@ -19,8 +19,8 @@ The last check downloads approximately 280 MB plus runtime/tokenizer files. It r
 ## Current evidence (2026-11-04)
 
 - Type checks and the production build pass. The WebLLM bundle remains large; Vite reports a size warning.
-- Unit/component tests cover conversation context, cancellation, stale output, safe Markdown, opt-in storage, attachments, server stream parsing and errors.
-- Chrome browser tests exercise desktop/mobile light and dark layouts, offline app reload, model-picker dismissal, a growing composer, conversational requests, attachments, branches and saved-chat reload. Server responses in these checks are controlled fixtures.
+- Unit/component tests cover conversation context, cancellation, stale output, safe Markdown, opt-in storage, attachments, worker streaming and errors.
+- Chrome browser tests exercise desktop/mobile light and dark layouts, offline app reload, model-picker dismissal, a growing composer, conversational requests, attachments, branches and saved-chat reload. Inference worker responses in these checks are controlled fixtures; no model server is used.
 - This machine's automated Chrome reports no usable WebGPU adapter. Real browser-model inference, offline model reload, speed and quality remain unverified. Those tests are explicit opt-ins and skipped in the normal suite.
 
 ## Collect real outputs

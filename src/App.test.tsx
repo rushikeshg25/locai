@@ -105,7 +105,9 @@ it("preserves failed messages and forks a retry", async () => {
   await ready();
   await send("My draft");
   await screen.findByText(/Generation failed/);
-  expect(screen.getByText("My draft")).toBeInTheDocument();
+  expect(
+    screen.getByText("My draft", { selector: ".user-text" }),
+  ).toBeInTheDocument();
   await ready();
   fireEvent.click(screen.getByRole("button", { name: "Retry" }));
   await screen.findByText("We might ship Friday.");
