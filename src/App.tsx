@@ -18,6 +18,7 @@ export default function App({ writer: supplied, gpuCheck = checkGPU }: { writer?
   const [requestSource, setRequestSource] = useState('');
   const [resultAction, setResultAction] = useState<Action>('grammar');
   const [requestTerms, setRequestTerms] = useState('');
+  useEffect(() => { const failed = () => setFeedback('Offline app caching failed. You can still use the app online.'); window.addEventListener('offline-cache-failed', failed); return () => window.removeEventListener('offline-cache-failed', failed); }, []);
   const [feedback, setFeedback] = useState('');
   const [previous, setPrevious] = useState<string | null>(null);
   const busy = session.status === 'loading' || session.status === 'writing';
