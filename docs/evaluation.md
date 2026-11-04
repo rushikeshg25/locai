@@ -19,7 +19,7 @@ The last check downloads approximately 280 MB plus runtime/tokenizer files. It r
 ## Current evidence (2026-11-04)
 
 - Type checking and production build passed.
-- Twelve unit/component tests passed, including stale request isolation, cancellation, timeout, errors, protected terms, copy and undo.
+- Fifteen unit/component/runtime-adapter tests passed, including stale request isolation, cancellation, timeout, errors, protected terms, copy and undo.
 - Two Chromium browser tests passed: desktop/mobile layouts without horizontal overflow; offline app reload without persisted drafts. Startup produced no external requests.
 - Real-model test attempted but failed at the capability gate: automated Chromium had no usable WebGPU adapter. No model downloaded. Real inference, offline model reload, latency and quality are unverified.
 - `npm audit --omit=dev`: zero vulnerabilities. Full audit: 2 low and 8 moderate development-tool advisories in the Workbox build dependency tree. `npm audit fix` could not resolve them without incompatible changes. Do not expose development tooling to untrusted build inputs.

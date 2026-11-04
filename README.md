@@ -26,7 +26,7 @@ Use a recent desktop browser with WebGPU and hardware acceleration. HTTPS or loc
 
 Text stays in browser memory. There are no accounts, analytics, text uploads, or saved drafts. Clipboard writes happen only when you press Copy. Model downloads contact Hugging Face and the runtime host. Model prompts are guidance, not guarantees: review meaning, facts and protected terms.
 
-Stopping terminates the worker; load the cached model again to continue. Remove model cache deletes the selected model through WebLLM. To remove all application storage, use your browser's site-data controls. Browser cache eviction or missing runtime assets can prevent offline use. Updates take effect after existing tabs close, preserving active drafts.
+Clear removes editor text, review snapshots, undo history and unloads the worker. Stopping terminates the worker; load the cached model again to continue. Remove model cache deletes the selected model through WebLLM. To remove all application storage, use your browser's site-data controls. Browser cache eviction or missing runtime assets can prevent offline use. Updates take effect after existing tabs close, preserving active drafts.
 
 ## Validation and limitations
 
