@@ -740,3 +740,29 @@ del {
   border: 1px solid var(--line);
   border-radius: 7px;
 }
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+.setup-steps {
+  max-width: 470px;
+  margin: 18px auto;
+  padding-left: 24px;
+  text-align: left;
+  font-size: 13px;
+}
+.setup-steps li {
+  padding: 4px 0;
+}
+.starter-prompts {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 22px 0;
+}
+.starter-prompts button {
+  border: 1px solid var(--line);
+  font-size: 12px;
+}

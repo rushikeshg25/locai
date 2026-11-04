@@ -1,3 +1,4 @@
+import { BrowserWelcome } from "./BrowserWelcome";
 import { Button } from "./Button";
 import {
   useEffect,
@@ -492,10 +493,15 @@ export default function App({
       >
         <section aria-label="Conversation messages" className="conversation">
           {!chat.messages.length && (
-            <div className="empty">
-              <h2>What’s on your mind?</h2>
-              <p>Chat about an idea, or switch to Write to polish a draft.</p>
-            </div>
+            <BrowserWelcome
+              ready={session.status === "ready"}
+              supported={supported}
+              model={selected.label}
+              onPrompt={(prompt) => {
+                setText(prompt);
+                composer.current?.focus();
+              }}
+            />
           )}
           {chat.messages.map((message, index) => (
             <article
