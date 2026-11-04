@@ -1,3 +1,4 @@
+import { Button } from "./Button";
 import { useEffect, useRef, useState } from "react";
 import { listServerModels, type ServerConfig } from "./server";
 export function ServerSettings({
@@ -40,7 +41,7 @@ export function ServerSettings({
           }}
         />
       </label>
-      <button
+      <Button
         className="secondary"
         disabled={busy || loading || ready}
         onClick={async () => {
@@ -71,7 +72,7 @@ export function ServerSettings({
         }}
       >
         {loading ? "Checking…" : "Find installed models"}
-      </button>
+      </Button>
       <label>
         Server model
         <select
@@ -106,7 +107,7 @@ export function ServerSettings({
         Match your server’s actual context setting. This field only limits
         outgoing history; it does not reconfigure the server.
       </p>
-      <button
+      <Button
         disabled={
           busy ||
           ready ||
@@ -125,11 +126,11 @@ export function ServerSettings({
         }}
       >
         {ready ? "Server connected" : "Connect server"}
-      </button>
+      </Button>
       {ready && (
-        <button className="secondary" disabled={busy} onClick={onDisconnect}>
+        <Button className="secondary" disabled={busy} onClick={onDisconnect}>
           Disconnect
-        </button>
+        </Button>
       )}
       {error && <p role="alert">{error}</p>}
     </div>

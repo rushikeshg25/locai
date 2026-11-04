@@ -18,7 +18,13 @@ function validMessage(value: unknown): value is Message {
             a && typeof a.name === "string" && typeof a.content === "string",
         ))) &&
     (m.modelLabel === undefined || typeof m.modelLabel === "string") &&
-    (m.source === undefined || typeof m.source === "string")
+    (m.source === undefined || typeof m.source === "string") &&
+    (m.model === undefined || typeof m.model === "string") &&
+    (m.omitted === undefined ||
+      (Number.isInteger(m.omitted) && m.omitted >= 0)) &&
+    (m.truncated === undefined || typeof m.truncated === "boolean") &&
+    (m.state === undefined ||
+      ["streaming", "complete", "stopped", "error"].includes(m.state))
   );
 }
 export function readSaved(): { chats: Conversation[]; warning: string } {
@@ -35,7 +41,11 @@ export function readSaved(): { chats: Conversation[]; warning: string } {
         if (
           !value ||
           key !== PREFIX + value.id ||
+          typeof value.id !== "string" ||
           typeof value.title !== "string" ||
+          !Number.isFinite(value.updatedAt) ||
+          new Set(value.messages?.map((message: Message) => message?.id))
+            .size !== value.messages?.length ||
           !["chat", "write"].includes(value.mode) ||
           !Array.isArray(value.messages) ||
           !value.messages.every(validMessage)

@@ -1,4 +1,10 @@
 const paths = {
+  branch:
+    "M6 3v12a4 4 0 0 0 4 4h8 M6 7h8a4 4 0 0 0 4-4 M15 16l3 3-3 3 M15 6l3-3 3 3",
+  plus: "M12 5v14 M5 12h14",
+  edit: "m16 3 5 5-12 12H4v-5z M13 6l5 5",
+  save: "M4 3h13l4 4v14H3V3z M7 3v6h10V3 M7 21v-8h10v8",
+  chat: "M3 4h18v13H8l-5 4z",
   attach: "m21 11-8 8a6 6 0 0 1-8-8l9-9a4 4 0 0 1 6 6L10 18a2 2 0 0 1-3-3l9-9",
   more: "M5 12h.01 M12 12h.01 M19 12h.01",
   simplify: "M4 6h16 M4 12h10 M4 18h6",

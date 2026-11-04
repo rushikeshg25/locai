@@ -1,3 +1,4 @@
+import { Button } from "./Button";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   actions,
@@ -54,6 +55,8 @@ export default function App({
   );
   const autoAttempted = useRef(false);
   const session = useWriter(writer);
+  const currentStatus = useRef(session.status);
+  currentStatus.current = session.status;
   const [supported, setSupported] = useState<boolean | null>(null);
   const [model, setModel] = useState<string>(preferredModel);
   const [saved] = useState(readSaved);
@@ -70,6 +73,26 @@ export default function App({
   const [selection, setSelection] = useState("");
   const files = useRef<HTMLInputElement>(null);
   const persistFailures = useRef(new Set<string>());
+  useEffect(() => {
+    const changed = (event: StorageEvent) => {
+      if (event.key === null || event.key.startsWith("local-writer-chat-v1:")) {
+        setChats((items) =>
+          items.map((item) =>
+            item.saved &&
+            (event.key === null ||
+              event.key === `local-writer-chat-v1:${item.id}`)
+              ? { ...item, saved: false }
+              : item,
+          ),
+        );
+        setFeedback(
+          "Saved chats changed in another tab. This tab’s copies are now temporary; save again to keep your changes.",
+        );
+      }
+    };
+    window.addEventListener("storage", changed);
+    return () => window.removeEventListener("storage", changed);
+  }, []);
   useEffect(() => {
     for (const item of chats) {
       if (
@@ -121,7 +144,8 @@ export default function App({
       (cached) => {
         if (alive) {
           autoAttempted.current = true;
-          if (cached) void session.load(model);
+          if (cached && currentStatus.current === "idle")
+            void session.load(model);
         }
       },
       () =>
@@ -305,36 +329,36 @@ export default function App({
       <header>
         <h1>Local Writer</h1>
         <div className="header-tools">
-          <button
+          <Button
             className="secondary"
             disabled={busy}
             onClick={newChat}
             title="Start an empty conversation; keep the model loaded"
           >
-            <Icon name="clear" />
+            <Icon name="plus" />
             New chat
-          </button>
-          <button
+          </Button>
+          <Button
             className="icon-button secondary"
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             onClick={toggleTheme}
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} />
-          </button>
-          <button
+          </Button>
+          <Button
             className="icon-button secondary"
             aria-label="About Local Writer"
             title="About Local Writer"
             onClick={() => info.current?.showModal()}
           >
             <Icon name="info" />
-          </button>
+          </Button>
         </div>
       </header>
       <div className="chat-controls">
         <small>{chat.saved ? "Saved on this device" : "Temporary chat"}</small>
-        <button
+        <Button
           className="secondary"
           disabled={busy || !chat.messages.length}
           onClick={() => {
@@ -359,9 +383,10 @@ export default function App({
             }
           }}
         >
+          <Icon name="save" />
           {chat.saved ? "Make temporary" : "Save on device"}
-        </button>
-        <button
+        </Button>
+        <Button
           className="secondary"
           disabled={!chat.messages.length}
           onClick={() => {
@@ -377,9 +402,10 @@ export default function App({
             setTimeout(() => URL.revokeObjectURL(url), 1000);
           }}
         >
+          <Icon name="download" />
           Export
-        </button>
-        <button
+        </Button>
+        <Button
           className="secondary"
           disabled={busy}
           title="Delete this conversation and its saved copy"
@@ -403,8 +429,9 @@ export default function App({
             }
           }}
         >
+          <Icon name="clear" />
           Delete
-        </button>
+        </Button>
       </div>
       {chats.length > 1 && (
         <label className="conversation-switch">
@@ -488,17 +515,17 @@ export default function App({
                     value={editText}
                     onChange={(event) => setEditText(event.target.value)}
                   />
-                  <button
+                  <Button
                     onClick={() => {
                       patch(chat.id, message.id, { content: editText });
                       setEdit(null);
                     }}
                   >
                     Save edit
-                  </button>
-                  <button className="secondary" onClick={() => setEdit(null)}>
+                  </Button>
+                  <Button className="secondary" onClick={() => setEdit(null)}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               ) : message.role === "user" ? (
                 <p className="user-text">{message.content}</p>
@@ -533,17 +560,17 @@ export default function App({
               )}
               <div className="message-tools">
                 {message.content && (
-                  <button
+                  <Button
                     className="secondary"
                     title="Copy message"
                     onClick={() => void copy(message.content)}
                   >
                     <Icon name="copy" />
                     Copy
-                  </button>
+                  </Button>
                 )}
                 {message.role === "user" && (
-                  <button
+                  <Button
                     className="secondary"
                     disabled={busy}
                     title="Edit and resend in a new branch"
@@ -561,11 +588,11 @@ export default function App({
                   >
                     <Icon name="reuse" />
                     Edit & resend
-                  </button>
+                  </Button>
                 )}
                 {message.role === "assistant" && (
                   <>
-                    <button
+                    <Button
                       className="secondary"
                       disabled={busy || session.status !== "ready"}
                       title="Retry this request in a new branch"
@@ -584,8 +611,31 @@ export default function App({
                     >
                       <Icon name="undo" />
                       Retry
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      className="secondary"
+                      disabled={busy}
+                      title="Continue from this reply in a new conversation branch"
+                      onClick={() => {
+                        const branch = {
+                          ...newConversation(chat.mode),
+                          title: `${chat.title.slice(0, 36)} (branch)`,
+                          messages: chat.messages.slice(0, index + 1),
+                        };
+                        setChats((items) => [branch, ...items]);
+                        setActive(branch.id);
+                        setText("");
+                        setAttachments([]);
+                        setResend(null);
+                        setEdit(null);
+                        nearBottom.current = true;
+                        setLatest(false);
+                      }}
+                    >
+                      <Icon name="branch" />
+                      Branch
+                    </Button>
+                    <Button
                       className="secondary"
                       disabled={busy || !message.content}
                       title="Edit this response"
@@ -594,9 +644,10 @@ export default function App({
                         setEditText(message.content);
                       }}
                     >
+                      <Icon name="edit" />
                       Edit result
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className="secondary"
                       disabled={busy || !message.content}
                       title="Use response as a new draft"
@@ -607,7 +658,7 @@ export default function App({
                     >
                       <Icon name="reuse" />
                       Use as input
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>
@@ -625,7 +676,7 @@ export default function App({
         </section>
       </div>
       {latest && (
-        <button
+        <Button
           className="jump secondary"
           onClick={() => {
             nearBottom.current = true;
@@ -635,11 +686,11 @@ export default function App({
           }}
         >
           ↓ Jump to latest
-        </button>
+        </Button>
       )}
       <section className="compose-area" aria-label="Message composer">
         {selection.trim() && (
-          <button
+          <Button
             className="secondary"
             disabled={busy}
             onClick={() => {
@@ -652,12 +703,12 @@ export default function App({
             }}
           >
             Rewrite selected text
-          </button>
+          </Button>
         )}
         <div className="compose-options">
           <div className="mode-switch" role="group" aria-label="Mode">
             {(["chat", "write"] as const).map((mode) => (
-              <button
+              <Button
                 key={mode}
                 className="secondary"
                 aria-pressed={chat.mode === mode}
@@ -665,13 +716,13 @@ export default function App({
                 onClick={() => update(chat.id, (item) => ({ ...item, mode }))}
               >
                 {mode === "chat" ? "Chat" : "Write"}
-              </button>
+              </Button>
             ))}
           </div>
           {chat.mode === "write" && (
             <div className="actions" role="group" aria-label="Writing actions">
               {primaryActions.map((key) => (
-                <button
+                <Button
                   key={key}
                   className="secondary"
                   aria-pressed={key === action}
@@ -681,7 +732,7 @@ export default function App({
                 >
                   <Icon name={key} />
                   {actions[key].label}
-                </button>
+                </Button>
               ))}
               <select
                 aria-label="More writing actions"
@@ -704,9 +755,9 @@ export default function App({
         {resend !== null && (
           <div className="draft-note">
             Editing a previous request · original conversation will be kept.
-            <button className="secondary" onClick={() => setResend(null)}>
+            <Button className="secondary" onClick={() => setResend(null)}>
               Cancel edit
-            </button>
+            </Button>
           </div>
         )}
         <div className="composer">
@@ -747,7 +798,7 @@ export default function App({
               {attachments.map((file, index) => (
                 <span key={index}>
                   {file.name}
-                  <button
+                  <Button
                     className="secondary"
                     aria-label={`Remove ${file.name}`}
                     disabled={busy}
@@ -758,7 +809,7 @@ export default function App({
                     }
                   >
                     ×
-                  </button>
+                  </Button>
                 </span>
               ))}
             </div>
@@ -767,7 +818,8 @@ export default function App({
             <input
               ref={files}
               className="sr-only"
-              aria-label="Attach text files"
+              aria-label="Text file selection"
+              tabIndex={-1}
               type="file"
               accept=".txt,.md,.markdown"
               multiple
@@ -783,7 +835,7 @@ export default function App({
                 }
               }}
             />
-            <button
+            <Button
               className="secondary icon-button"
               aria-label="Attach text files"
               title="Attach up to 3 UTF-8 text or Markdown files, 24 KB total"
@@ -791,7 +843,7 @@ export default function App({
               onClick={() => files.current?.click()}
             >
               <Icon name="attach" />
-            </button>
+            </Button>
             <span className="muted keyboard-hint">
               Shift + Enter for a new line
             </span>
@@ -839,7 +891,7 @@ export default function App({
                 onUnload={() => session.stop("")}
               />
               {busy ? (
-                <button
+                <Button
                   className="send-button"
                   aria-label="Stop"
                   title="Stop"
@@ -850,9 +902,9 @@ export default function App({
                   onClick={() => session.stop()}
                 >
                   <Icon name="stop" />
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   className="send-button"
                   aria-label="Send message"
                   title={
@@ -864,7 +916,7 @@ export default function App({
                   onClick={() => void send()}
                 >
                   <Icon name="send" />
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -909,10 +961,10 @@ export default function App({
           server. Review AI answers before using them.
         </p>
         <form method="dialog">
-          <button>
+          <Button>
             <Icon name="close" />
             Close
-          </button>
+          </Button>
         </form>
       </dialog>
     </main>

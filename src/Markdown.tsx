@@ -1,3 +1,4 @@
+import { Button } from "./Button";
 import { useRef, useState, type ComponentPropsWithoutRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -6,7 +7,7 @@ function CodeBlock({ children, ...props }: ComponentPropsWithoutRef<"pre">) {
   const [notice, setNotice] = useState("");
   return (
     <div className="code-block">
-      <button
+      <Button
         className="secondary"
         onClick={async () => {
           try {
@@ -20,7 +21,7 @@ function CodeBlock({ children, ...props }: ComponentPropsWithoutRef<"pre">) {
         }}
       >
         Copy code
-      </button>
+      </Button>
       <pre {...props} ref={code}>
         {children}
       </pre>

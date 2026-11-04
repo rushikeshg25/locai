@@ -674,3 +674,50 @@ del {
   width: 100%;
   margin-top: 5px;
 }
+
+.button-hint {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.tooltip {
+  position: fixed;
+  width: max-content;
+  max-width: min(220px, calc(100vw - 24px));
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  line-height: 1.4;
+  z-index: 30;
+  pointer-events: none;
+}
+.chat-controls .icon {
+  width: 13px;
+  height: 13px;
+}
+.model-panel .button-hint {
+  max-width: 100%;
+}
+.model-name {
+  display: block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.code-block {
+  background: var(--soft);
+  border-radius: 9px;
+}
+.code-block pre {
+  background: transparent;
+  padding-top: 44px;
+}
+.code-block button {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  float: none;
+  margin: 0;
+}

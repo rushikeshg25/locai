@@ -211,3 +211,76 @@ it("turns selected draft text into a focused writing request", async () => {
     ),
   );
 });
+it("loads cached weights automatically only after opting in", async () => {
+  localStorage.setItem("local-writer-auto-load", "true");
+  const writer = setup(true, true);
+  await waitFor(() => expect(writer.load).toHaveBeenCalledOnce());
+});
+it("can branch from a reply without making another model request", async () => {
+  const writer = setup();
+  await ready();
+  await send("Original");
+  fireEvent.click(screen.getByRole("button", { name: "Branch" }));
+  expect(writer.generate).toHaveBeenCalledOnce();
+  expect(
+    screen.getByLabelText("Conversation").querySelectorAll("option"),
+  ).toHaveLength(2);
+  await send("Continue here");
+  expect(writer.generate).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      history: [
+        { role: "user", content: "Original" },
+        { role: "assistant", content: "We might ship Friday." },
+      ],
+    }),
+    expect.any(Function),
+  );
+});
+it("keeps the reader's scroll position during streaming and offers jump to latest", async () => {
+  const writer = setup();
+  let emit!: (text: string) => void;
+  let finish!: (value: { truncated: boolean }) => void;
+  vi.mocked(writer.generate).mockImplementation((_request, chunk) => {
+    emit = chunk;
+    return new Promise((resolve) => (finish = resolve));
+  });
+  await ready();
+  fireEvent.change(screen.getByLabelText("Your text"), {
+    target: { value: "Long response" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+  const transcript = document.querySelector(".transcript")!;
+  Object.defineProperty(transcript, "scrollHeight", {
+    configurable: true,
+    value: 2000,
+  });
+  Object.defineProperty(transcript, "clientHeight", {
+    configurable: true,
+    value: 500,
+  });
+  transcript.scrollTop = 100;
+  fireEvent.scroll(transcript);
+  await import("@testing-library/react").then(({ act }) =>
+    act(() => emit("More content")),
+  );
+  expect(transcript.scrollTop).toBe(100);
+  fireEvent.click(screen.getByRole("button", { name: /Jump to latest/ }));
+  expect(transcript.scrollTop).toBe(2000);
+  await import("@testing-library/react").then(({ act }) =>
+    act(() => finish({ truncated: false })),
+  );
+});
+it("stops saving a stale copy when another tab changes it", async () => {
+  setup();
+  await ready();
+  await send("Saved request");
+  fireEvent.click(screen.getByRole("button", { name: "Save on device" }));
+  await screen.findByText("Saved on this device");
+  const key = Object.keys(localStorage).find((key) =>
+    key.startsWith("local-writer-chat-v1:"),
+  )!;
+  localStorage.removeItem(key);
+  fireEvent(window, new StorageEvent("storage", { key, newValue: null }));
+  expect(screen.getByText("Temporary chat")).toBeInTheDocument();
+  expect(localStorage.getItem(key)).toBeNull();
+});

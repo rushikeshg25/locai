@@ -1,3 +1,4 @@
+import { Button } from "./Button";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { models } from "./models";
 import type { Writer } from "./inference";
@@ -84,31 +85,34 @@ export function ModelPicker({
         title="Select, download or manage writing models"
       >
         <Icon name="model" />
-        {provider === "server"
-          ? serverLabel || "Local server"
-          : (models.find((item) => item.id === model)?.label.split(" · ")[1] ??
-            model)}
+        <span className="model-name">
+          {provider === "server"
+            ? serverLabel || "Local server"
+            : (models
+                .find((item) => item.id === model)
+                ?.label.split(" · ")[1] ?? model)}
+        </span>
         <span aria-hidden="true">⌄</span>
       </summary>
       <section className="model-panel" aria-label="Model setup">
         <h2>Models</h2>
         <div className="mode-switch" role="group" aria-label="Model provider">
-          <button
+          <Button
             className="secondary"
             aria-pressed={provider === "browser"}
             disabled={busy}
             onClick={() => onProvider("browser")}
           >
             In browser
-          </button>
-          <button
+          </Button>
+          <Button
             className="secondary"
             aria-pressed={provider === "server"}
             disabled={busy}
             onClick={() => onProvider("server")}
           >
             Local server
-          </button>
+          </Button>
         </div>
         {provider === "server" ? (
           serverPanel
@@ -156,7 +160,7 @@ export function ModelPicker({
               Offline use requires weights, tokenizer, config and runtime files.
             </p>
             <div className="model-controls">
-              <button
+              <Button
                 disabled={!supported || busy || status === "ready"}
                 onClick={onLoad}
               >
@@ -166,22 +170,22 @@ export function ModelPicker({
                   : cache[model]
                     ? "Load selected model"
                     : "Download / load model"}
-              </button>
-              <button
+              </Button>
+              <Button
                 className="secondary"
                 disabled={busy || status !== "ready"}
                 onClick={onUnload}
               >
                 Unload
-              </button>
-              <button
+              </Button>
+              <Button
                 className="secondary"
                 disabled={busy || cache[model] !== true}
                 onClick={onRemove}
               >
                 <Icon name="clear" />
                 Remove model cache
-              </button>
+              </Button>
             </div>
             <label>
               <input
@@ -228,7 +232,7 @@ function StorageInfo({ refresh }: { refresh: string }) {
       <p className="muted">
         {info || "Browser storage estimates unavailable."}
       </p>
-      <button
+      <Button
         className="secondary"
         onClick={async () => {
           try {
@@ -244,7 +248,7 @@ function StorageInfo({ refresh }: { refresh: string }) {
         }}
       >
         Keep downloads on device
-      </button>
+      </Button>
       {retention && (
         <p role="status" className="muted">
           {retention}

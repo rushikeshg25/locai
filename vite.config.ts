@@ -11,8 +11,8 @@ export default defineConfig({
         name: "Local Writer",
         short_name: "Local Writer",
         description: "Private on-device writing assistant",
-        theme_color: "#173f35",
-        background_color: "#f6f5ef",
+        theme_color: "#fafafa",
+        background_color: "#fafafa",
         display: "standalone",
       },
       workbox: {

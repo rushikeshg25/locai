@@ -47,3 +47,19 @@ it("rejects unsupported or oversized attachments", async () => {
     readAttachments([new File(["x".repeat(24001)], "note.txt")]),
   ).rejects.toThrow("24 KB");
 });
+it("rejects malformed message metadata before it can reach rendering", () => {
+  const chat = newConversation();
+  chat.messages = [
+    { id: "1", role: "assistant", content: "reply", omitted: 1 },
+  ];
+  const invalid = {
+    ...chat,
+    messages: [{ ...chat.messages[0], omitted: { bad: true } }],
+  };
+  localStorage.setItem(
+    `local-writer-chat-v1:${chat.id}`,
+    JSON.stringify(invalid),
+  );
+  expect(readSaved().chats).toHaveLength(0);
+  expect(readSaved().warning).toContain("could not be read");
+});
