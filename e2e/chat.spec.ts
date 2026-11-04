@@ -1,41 +1,21 @@
 import { test, expect, type Page } from "@playwright/test";
+import { installBrowserModel, modelRequests } from "./browser-model";
 async function connect(page: Page) {
-  await page.route("http://localhost:11434/v1/models", (route) =>
-    route.fulfill({ json: { data: [{ id: "test-model" }] } }),
-  );
+  await installBrowserModel(page);
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("button", { name: "Local server", exact: true }).click();
-  await page.getByRole("button", { name: "Find installed models" }).click();
-  await page
-    .getByRole("button", { name: "Connect server", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Download / load model" }).click();
   await expect(
-    page.getByRole("button", { name: "Server connected", includeHidden: true }),
+    page.getByRole("button", { name: "Model ready", includeHidden: true }),
   ).toBeAttached();
 }
 test("chat context, Markdown, attachments, branching and opt-in persistence", async ({
   page,
 }) => {
-  const requests: unknown[] = [];
-  await page.route("http://localhost:11434/v1/chat/completions", (route) => {
-    requests.push(route.request().postDataJSON());
-    return route.fulfill({
-      contentType: "text/event-stream",
-      body:
-        "data: " +
-        JSON.stringify({
-          choices: [
-            {
-              delta: {
-                content:
-                  "**Hello**\n\n```js\nconst answer = 42;\n```\n\n![image](https://example.com/track)",
-              },
-            },
-          ],
-        }) +
-        "\n\ndata: [DONE]\n\n",
-    });
+  const external: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).hostname !== "127.0.0.1")
+      external.push(request.url());
   });
   await connect(page);
   await page.locator('input[type="file"]').setInputFiles({
@@ -57,7 +37,8 @@ test("chat context, Markdown, attachments, branching and opt-in persistence", as
   await expect(page.locator(".assistant")).toHaveCount(2);
   await expect(page.getByText("Thinking…")).toHaveCount(0);
   await page.screenshot({ path: "/tmp/local-writer-conversation.png" });
-  const second = requests[1] as { messages: { content: string }[] };
+  const second = (await modelRequests(page))[1];
+  expect(external).toEqual([]);
   expect(second.messages).toHaveLength(4);
   expect(second.messages[1].content).toContain("The meeting is Friday.");
   await page.getByRole("button", { name: "Retry", exact: true }).last().click();
