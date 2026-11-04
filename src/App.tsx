@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   actions,
   primaryActions,
@@ -11,6 +11,17 @@ import { checkGPU, models } from "./models";
 import { ChangeReview } from "./ChangeReview";
 import { Icon } from "./Icon";
 import { useWriter } from "./useWriter";
+import { useTheme } from "./useTheme";
+import { ModelPicker } from "./ModelPicker";
+import { Markdown } from "./Markdown";
+import {
+  newConversation,
+  conversationHistory,
+  messageText,
+  type Message,
+  type Conversation,
+} from "./conversations";
+import { prepareMessages } from "./prompts";
 export default function App({
   writer: supplied,
   gpuCheck = checkGPU,
@@ -18,95 +29,28 @@ export default function App({
   writer?: Writer;
   gpuCheck?: () => Promise<boolean>;
 }) {
-  const [themeChoice, setThemeChoice] = useState<"light" | "dark" | null>(
-    () => {
-      try {
-        const saved = localStorage.getItem("local-writer-theme");
-        return saved === "light" || saved === "dark" ? saved : null;
-      } catch {
-        return null;
-      } // Theme persistence is optional when storage is blocked.
-    },
-  );
-  const [systemDark, setSystemDark] = useState(
-    () => window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false,
-  );
-  const theme = themeChoice ?? (systemDark ? "dark" : "light");
-  useEffect(() => {
-    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
-    if (!media) return;
-    const changed = () => setSystemDark(media.matches);
-    media.addEventListener("change", changed);
-    return () => media.removeEventListener("change", changed);
-  }, []);
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setThemeChoice(next);
-    try {
-      localStorage.setItem("local-writer-theme", next);
-    } catch {
-      /* Keep the toggle working when storage is blocked. */
-    }
-  }
-  const modelPicker = useRef<HTMLDetailsElement>(null);
-  const infoDialog = useRef<HTMLDialogElement>(null);
+  const { theme, toggleTheme } = useTheme();
   const [writer] = useState(() => supplied ?? new LocalWriter());
   const session = useWriter(writer);
   const [supported, setSupported] = useState<boolean | null>(null);
   const [model, setModel] = useState<string>(models[0].id);
-  const [hasCachedModel, setHasCachedModel] = useState<boolean | null>(null);
-  const [modelCache, setModelCache] = useState<Record<string, boolean | null>>(
-    {},
-  );
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  useEffect(() => {
-    const outside = (event: PointerEvent) => {
-      if (
-        modelPicker.current?.open &&
-        event.target instanceof Node &&
-        !modelPicker.current.contains(event.target)
-      ) {
-        modelPicker.current.open = false;
-        setSettingsOpen(false);
-      }
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && modelPicker.current?.open) {
-        modelPicker.current.open = false;
-        setSettingsOpen(false);
-        modelPicker.current?.querySelector("summary")?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", outside);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", outside);
-      document.removeEventListener("keydown", escape);
-    };
-  }, []);
-  const [cached, setCached] = useState<string>("Checking cache…");
+  const [chats, setChats] = useState<Conversation[]>(() => [newConversation()]);
+  const [active, setActive] = useState("");
+  const chat = chats.find((item) => item.id === active) ?? chats[0];
   const [text, setText] = useState("");
   const [action, setAction] = useState<Action>("grammar");
-  const [requestSource, setRequestSource] = useState("");
-  const [resultAction, setResultAction] = useState<Action>("grammar");
-  useEffect(() => {
-    const failed = () =>
-      setFeedback(
-        "Offline app caching failed. You can still use the app online.",
-      );
-    window.addEventListener("offline-cache-failed", failed);
-    return () => window.removeEventListener("offline-cache-failed", failed);
-  }, []);
   const [feedback, setFeedback] = useState("");
-  const [previous, setPrevious] = useState<string | null>(null);
-  const busy =
-    session.status === "loading" ||
-    session.status === "writing" ||
-    session.status === "stopping" ||
-    session.status === "removing";
+  const [edit, setEdit] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [resend, setResend] = useState<Message[] | null>(null);
+  const composer = useRef<HTMLTextAreaElement>(null);
+  const scroll = useRef<HTMLDivElement>(null);
+  const nearBottom = useRef(true);
+  const [latest, setLatest] = useState(false);
+  const info = useRef<HTMLDialogElement>(null);
+  const busy = ["loading", "writing", "stopping", "removing"].includes(
+    session.status,
+  );
   const selected = models.find((item) => item.id === model)!;
   useEffect(() => {
     let alive = true;
@@ -123,70 +67,149 @@ export default function App({
     };
   }, [gpuCheck]);
   useEffect(() => {
-    let alive = true;
-    setCached("Checking cache…");
-    setHasCachedModel(null);
-    Promise.all(
-      models.map(async (item) => {
-        try {
-          return [item.id, await writer.cached(item.id)] as const;
-        } catch {
-          return [item.id, null] as const;
-        }
-      }),
-    ).then((entries) => {
-      if (!alive) return;
-      const cache = Object.fromEntries(entries);
-      setModelCache(cache);
-      const value = cache[model];
-      setHasCachedModel(value);
-      setCached(
-        value === null
-          ? "Cache unavailable. Check browser storage permissions."
-          : value
-            ? "Weights downloaded. Offline use also needs cached runtime files."
-            : "First download needs internet.",
+    const failed = () =>
+      setFeedback(
+        "Offline app caching failed. You can still use the app online.",
       );
-    });
-    return () => {
-      alive = false;
-    };
-  }, [writer, model, session.status]);
-  useEffect(() => {
-    if (session.status === "ready") {
-      setSettingsOpen(false);
+    window.addEventListener("offline-cache-failed", failed);
+    return () => window.removeEventListener("offline-cache-failed", failed);
+  }, []);
+  useLayoutEffect(() => {
+    if (composer.current) {
+      composer.current.style.height = "auto";
+      composer.current.style.height = `${Math.min(composer.current.scrollHeight, 240)}px`;
     }
-  }, [session.status]);
-  function run() {
-    const error = inputError(text);
-    setFeedback(error ?? "");
-    if (!error) {
-      setRequestSource(text);
-      setResultAction(action);
-      void session.run({ text, action, terms: "", instruction: "" });
-    }
+  }, [text]);
+  useLayoutEffect(() => {
+    if (nearBottom.current && scroll.current)
+      scroll.current.scrollTop = scroll.current.scrollHeight;
+    else setLatest(true);
+  }, [chat.messages]);
+  function update(id: string, fn: (item: Conversation) => Conversation) {
+    setChats((items) =>
+      items.map((item) =>
+        item.id === id ? { ...fn(item), updatedAt: Date.now() } : item,
+      ),
+    );
   }
-  async function copy() {
+  function patch(id: string, messageId: string, values: Partial<Message>) {
+    update(id, (item) => ({
+      ...item,
+      messages: item.messages.map((message) =>
+        message.id === messageId ? { ...message, ...values } : message,
+      ),
+    }));
+  }
+  function newChat() {
+    const next = newConversation(chat.mode);
+    setChats((items) => [next, ...items]);
+    setActive(next.id);
+    setText("");
+    setResend(null);
+    setFeedback("");
+    setEdit(null);
+    nearBottom.current = true;
+    setLatest(false);
+  }
+  async function send(
+    source = text,
+    prefix = resend ?? chat.messages,
+    fork = resend !== null,
+  ) {
+    if (busy || session.status !== "ready") return;
+    const error = inputError(source);
+    if (error) {
+      setFeedback(error);
+      return;
+    }
+    const request = {
+      text: source,
+      mode: chat.mode,
+      action,
+      terms: "",
+      instruction: "",
+      history: conversationHistory(prefix),
+    };
+    let budget;
     try {
-      await navigator.clipboard.writeText(session.output);
+      budget = prepareMessages(request);
+    } catch (cause) {
+      setFeedback((cause as Error).message);
+      return;
+    }
+    const user: Message = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: source,
+      mode: chat.mode,
+      action,
+    };
+    const answer: Message = {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content: "",
+      state: "streaming",
+      model,
+      modelLabel: selected.label,
+      mode: chat.mode,
+      action,
+      source,
+      omitted: budget.omitted,
+    };
+    let id = chat.id;
+    if (fork) {
+      const branch = {
+        ...newConversation(chat.mode),
+        title: `${source.slice(0, 36)} (branch)`,
+        messages: [...prefix, user, answer],
+      };
+      id = branch.id;
+      setChats((items) => [branch, ...items]);
+      setActive(id);
+    } else
+      update(id, (item) => ({
+        ...item,
+        title: item.messages.length ? item.title : source.slice(0, 44),
+        messages: [...prefix, user, answer],
+      }));
+    setText("");
+    setResend(null);
+    setFeedback("");
+    nearBottom.current = true;
+    setLatest(false);
+    const result = await session.run(request, (content) =>
+      patch(id, answer.id, { content }),
+    );
+    patch(id, answer.id, {
+      content: result.text,
+      state: result.state,
+      truncated: result.truncated,
+    });
+  }
+  async function copy(content: string) {
+    try {
+      await navigator.clipboard.writeText(content);
       setFeedback("Copied.");
     } catch {
-      setFeedback(
-        "Clipboard access failed. Select the result and copy it manually.",
-      );
+      setFeedback("Copy failed. Select the text and copy it manually.");
     }
   }
   return (
-    <main>
+    <main className="workspace">
       <header>
-        <h1>
-          <a className="brand" href="./">
-            Local Writer
-          </a>
-        </h1>
+        <h1>Local Writer</h1>
         <div className="header-tools">
           <button
-            className="info-button secondary"
+            className="secondary"
+            disabled={busy}
+            onClick={newChat}
+            title="Start an empty conversation; keep the model loaded"
+          >
+            <Icon name="clear" />
+            New chat
+          </button>
+          <button
+            className="icon-button secondary"
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             onClick={toggleTheme}
@@ -194,285 +217,343 @@ export default function App({
             <Icon name={theme === "dark" ? "sun" : "moon"} />
           </button>
           <button
-            className="info-button secondary"
+            className="icon-button secondary"
             aria-label="About Local Writer"
             title="About Local Writer"
-            onClick={() => infoDialog.current?.showModal()}
+            onClick={() => info.current?.showModal()}
           >
             <Icon name="info" />
           </button>
         </div>
       </header>
+      {chats.length > 1 && (
+        <label className="conversation-switch">
+          Conversation{" "}
+          <select
+            aria-label="Conversation"
+            value={chat.id}
+            disabled={busy}
+            onChange={(event) => {
+              setActive(event.target.value);
+              setText("");
+              setResend(null);
+              setEdit(null);
+              nearBottom.current = true;
+              setLatest(false);
+            }}
+          >
+            {chats.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {supported === false && (
-        <p role="alert">
+        <p role="alert" className="banner">
           WebGPU is unavailable. Use a recent desktop browser with hardware
           acceleration, on HTTPS or localhost.
         </p>
       )}
-      {supported === null && <p>Checking device support…</p>}
-      {session.status === "loading" && (
-        <div className="loading">
-          <progress
-            max={1}
-            value={session.progress.value}
-            aria-label="Model loading"
-          />
-          <p role="status">{session.progress.message}</p>
-        </div>
-      )}
-      <section className="conversation" aria-label="Writing conversation">
-        {!requestSource && (
-          <p className="empty">What would you like to write?</p>
-        )}
-        {requestSource && (
-          <article className="user-message">
-            <strong>You</strong>
-            <p>{requestSource}</p>
-          </article>
-        )}
-        <div className="reply">
-          <div className="editor-heading">
-            <label htmlFor="result">Your result</label>
-            <span>
-              {session.status === "writing"
-                ? "Writing…"
-                : "Review before using"}
-            </span>
-          </div>
-          <textarea
-            id="result"
-            rows={Math.max(
-              3,
-              Math.min(
-                24,
-                session.output.split("\n").length +
-                  Math.ceil(session.output.length / 85),
-              ),
-            )}
-            value={session.output}
-            disabled={busy}
-            onChange={(event) => session.setOutput(event.target.value)}
-            placeholder="A clearer version will appear here."
-          />
-          <div className="editor-footer">
-            <button
-              className="secondary"
-              disabled={busy || !session.output}
-              title="Copy result to clipboard"
-              onClick={copy}
+      <div
+        className="transcript"
+        ref={scroll}
+        onScroll={() => {
+          const el = scroll.current!;
+          nearBottom.current =
+            el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+          if (nearBottom.current) setLatest(false);
+        }}
+      >
+        <section aria-label="Conversation messages" className="conversation">
+          {!chat.messages.length && (
+            <div className="empty">
+              <h2>What’s on your mind?</h2>
+              <p>Chat about an idea, or switch to Write to polish a draft.</p>
+            </div>
+          )}
+          {chat.messages.map((message, index) => (
+            <article
+              className={`message ${message.role}`}
+              key={message.id}
+              aria-label={`${message.role === "user" ? "You" : "Assistant"} message`}
             >
-              <Icon name="copy" /> Copy result
-            </button>
-            <button
-              className="secondary"
-              disabled={busy || !session.output}
-              title="Use this result as your next draft"
-              onClick={() => {
-                setPrevious(text);
-                setText(session.output);
-                session.setOutput("");
-              }}
-            >
-              <Icon name="reuse" /> Use as input
-            </button>
-          </div>
-        </div>
-      </section>
-      {session.output && !busy && resultAction === "grammar" && (
-        <ChangeReview source={requestSource} result={session.output} />
+              <div className="message-heading">
+                <strong>
+                  {message.role === "user"
+                    ? "You"
+                    : (message.modelLabel ?? "Assistant")}
+                </strong>
+                {message.mode === "write" && (
+                  <small>{actions[message.action ?? "grammar"].label}</small>
+                )}
+              </div>
+              {edit === message.id ? (
+                <div className="result-editor">
+                  <textarea
+                    aria-label="Edit result"
+                    value={editText}
+                    onChange={(event) => setEditText(event.target.value)}
+                  />
+                  <button
+                    onClick={() => {
+                      patch(chat.id, message.id, { content: editText });
+                      setEdit(null);
+                    }}
+                  >
+                    Save edit
+                  </button>
+                  <button className="secondary" onClick={() => setEdit(null)}>
+                    Cancel
+                  </button>
+                </div>
+              ) : message.role === "user" ? (
+                <p className="user-text">{message.content}</p>
+              ) : (
+                <Markdown text={message.content} />
+              )}
+              {message.state === "streaming" && (
+                <small role="status">
+                  {message.content ? "Responding…" : "Thinking…"}
+                </small>
+              )}
+              {message.state === "stopped" && (
+                <small>Stopped · incomplete response</small>
+              )}
+              {message.state === "error" && (
+                <small>Response failed · your message is preserved</small>
+              )}
+              {message.truncated && (
+                <p className="muted">Response reached the output limit.</p>
+              )}
+              {!!message.omitted && (
+                <p className="muted">
+                  {message.omitted} older messages were left out of this request
+                  to fit the model.
+                </p>
+              )}
+              <div className="message-tools">
+                {message.content && (
+                  <button
+                    className="secondary"
+                    title="Copy message"
+                    onClick={() => void copy(message.content)}
+                  >
+                    <Icon name="copy" />
+                    Copy
+                  </button>
+                )}
+                {message.role === "user" && (
+                  <button
+                    className="secondary"
+                    disabled={busy}
+                    title="Edit and resend in a new branch"
+                    onClick={() => {
+                      setText(message.content);
+                      setResend(chat.messages.slice(0, index));
+                      composer.current?.focus();
+                    }}
+                  >
+                    <Icon name="reuse" />
+                    Edit & resend
+                  </button>
+                )}
+                {message.role === "assistant" && (
+                  <>
+                    <button
+                      className="secondary"
+                      disabled={busy || session.status !== "ready"}
+                      title="Retry this request in a new branch"
+                      onClick={() => {
+                        const user = chat.messages[index - 1];
+                        if (user)
+                          void send(
+                            messageText(user),
+                            chat.messages.slice(0, index - 1),
+                            true,
+                          );
+                      }}
+                    >
+                      <Icon name="undo" />
+                      Retry
+                    </button>
+                    <button
+                      className="secondary"
+                      disabled={busy || !message.content}
+                      title="Edit this response"
+                      onClick={() => {
+                        setEdit(message.id);
+                        setEditText(message.content);
+                      }}
+                    >
+                      Edit result
+                    </button>
+                    <button
+                      className="secondary"
+                      disabled={busy || !message.content}
+                      title="Use response as a new draft"
+                      onClick={() => {
+                        setText(message.content);
+                        composer.current?.focus();
+                      }}
+                    >
+                      <Icon name="reuse" />
+                      Use as input
+                    </button>
+                  </>
+                )}
+              </div>
+              {message.mode === "write" &&
+                message.role === "assistant" &&
+                message.content &&
+                message.state !== "streaming" && (
+                  <ChangeReview
+                    source={message.source ?? ""}
+                    result={message.content}
+                  />
+                )}
+            </article>
+          ))}
+        </section>
+      </div>
+      {latest && (
+        <button
+          className="jump secondary"
+          onClick={() => {
+            nearBottom.current = true;
+            setLatest(false);
+            if (scroll.current)
+              scroll.current.scrollTop = scroll.current.scrollHeight;
+          }}
+        >
+          ↓ Jump to latest
+        </button>
       )}
       <section className="compose-area" aria-label="Message composer">
-        <div className="actions" role="group" aria-label="Writing actions">
-          {primaryActions.map((key) => (
-            <button
-              key={key}
-              className="action"
-              aria-pressed={key === action}
-              title={actions[key].instruction}
-              disabled={busy}
-              onClick={() => setAction(key)}
-            >
-              <Icon name={key} />
-              <span>{actions[key].label}</span>
-            </button>
-          ))}
-          <label
-            className={`more-actions ${extraActions.includes(action) ? "selected" : ""}`}
-          >
-            <Icon name={extraActions.includes(action) ? action : "more"} />
-            <select
-              aria-label="More writing actions"
-              disabled={busy}
-              title="More ways to rewrite your text"
-              value={extraActions.includes(action) ? action : ""}
-              onChange={(event) => {
-                if (event.target.value) setAction(event.target.value as Action);
-              }}
-            >
-              <option value="" disabled>
-                More
-              </option>
-              {extraActions.map((key) => (
-                <option key={key} value={key}>
+        <div className="compose-options">
+          <div className="mode-switch" role="group" aria-label="Mode">
+            {(["chat", "write"] as const).map((mode) => (
+              <button
+                key={mode}
+                className="secondary"
+                aria-pressed={chat.mode === mode}
+                disabled={busy}
+                onClick={() => update(chat.id, (item) => ({ ...item, mode }))}
+              >
+                {mode === "chat" ? "Chat" : "Write"}
+              </button>
+            ))}
+          </div>
+          {chat.mode === "write" && (
+            <div className="actions" role="group" aria-label="Writing actions">
+              {primaryActions.map((key) => (
+                <button
+                  key={key}
+                  className="secondary"
+                  aria-pressed={key === action}
+                  title={actions[key].instruction}
+                  disabled={busy}
+                  onClick={() => setAction(key)}
+                >
+                  <Icon name={key} />
                   {actions[key].label}
-                </option>
+                </button>
               ))}
-            </select>
-          </label>
+              <select
+                aria-label="More writing actions"
+                disabled={busy}
+                value={extraActions.includes(action) ? action : ""}
+                onChange={(event) => setAction(event.target.value as Action)}
+              >
+                <option value="" disabled>
+                  More
+                </option>
+                {extraActions.map((key) => (
+                  <option key={key} value={key}>
+                    {actions[key].label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+        {resend !== null && (
+          <div className="draft-note">
+            Editing a previous request · original conversation will be kept.
+            <button className="secondary" onClick={() => setResend(null)}>
+              Cancel edit
+            </button>
+          </div>
+        )}
         <div className="composer">
           <label className="sr-only" htmlFor="source">
             Your text
           </label>
           <textarea
+            ref={composer}
             id="source"
+            rows={2}
             value={text}
             disabled={busy}
             onChange={(event) => setText(event.target.value)}
-            placeholder="Paste or write something to improve…"
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing &&
+                event.keyCode !== 229
+              ) {
+                event.preventDefault();
+                void send();
+              }
+            }}
+            placeholder={
+              chat.mode === "chat" ? "Message…" : "Paste or write a draft…"
+            }
           />
-          <div className="editor-footer">
-            <button
-              className="secondary"
-              disabled={busy}
-              aria-label="Clear"
-              title="Clear writing and unload the model"
-              onClick={() => {
-                session.stop("");
-                setText("");
-                session.setOutput("");
-                setRequestSource("");
-                setPrevious(null);
-                setFeedback("");
-              }}
-            >
-              <Icon name="clear" />
-            </button>
-            {previous !== null && (
-              <button
-                className="secondary"
-                aria-label="Undo input change"
-                title="Restore your previous draft"
-                disabled={busy}
-                onClick={() => {
-                  setText(previous);
-                  setPrevious(null);
-                }}
-              >
-                <Icon name="undo" />
-              </button>
-            )}
+          <div className="composer-footer">
+            <span className="muted keyboard-hint">
+              Shift + Enter for a new line
+            </span>
             <div className="run-bar">
-              <details
-                ref={modelPicker}
-                className="model-settings"
-                open={settingsOpen}
-                onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
-              >
-                <summary
-                  aria-label="Models"
-                  title="Select, download or manage writing models"
-                >
-                  <Icon name="model" />
-                  {selected.label.split(" · ")[1]}
-                </summary>
-                <section className="model-panel" aria-label="Model setup">
-                  <div>
-                    <h2 className="catalog-title">Writing models</h2>
-                    <div
-                      className="model-catalog"
-                      role="radiogroup"
-                      aria-label="Writing model"
-                    >
-                      {models.map((item) => (
-                        <label className="model-option" key={item.id}>
-                          <input
-                            type="radio"
-                            name="writing-model"
-                            value={item.id}
-                            checked={model === item.id}
-                            disabled={busy}
-                            onChange={() => {
-                              session.stop("");
-                              setModel(item.id);
-                              setHasCachedModel(modelCache[item.id] ?? null);
-                            }}
-                          />
-                          <span>
-                            <strong>{item.label}</strong>
-                            <small>
-                              {item.download} · {item.memory}
-                            </small>
-                            <small>
-                              {model === item.id && session.status === "ready"
-                                ? "In use"
-                                : modelCache[item.id] === true
-                                  ? "Downloaded"
-                                  : modelCache[item.id] === false
-                                    ? "Not downloaded"
-                                    : "Cache status unavailable"}
-                            </small>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                    <p className="muted">{cached}</p>
-                  </div>
-                  <div className="model-controls">
-                    <button
-                      disabled={
-                        !supported || busy || session.status === "ready"
-                      }
-                      title="Load the selected model on this device"
-                      onClick={() => void session.load(model)}
-                    >
-                      <Icon
-                        name={
-                          session.status === "ready" ? "grammar" : "download"
-                        }
-                      />
-                      {session.status === "ready"
-                        ? "Model ready"
-                        : hasCachedModel === true
-                          ? "Load selected model"
-                          : "Download / load model"}
-                    </button>
-                    <button
-                      className="secondary"
-                      disabled={busy || hasCachedModel !== true}
-                      title="Remove the selected model's downloaded files"
-                      onClick={() => void session.remove(model)}
-                    >
-                      <Icon name="clear" /> Remove model cache
-                    </button>
-                  </div>
-                </section>
-              </details>
+              <ModelPicker
+                writer={writer}
+                model={model}
+                status={session.status}
+                supported={supported}
+                onSelect={(id) => {
+                  session.stop("");
+                  setModel(id);
+                }}
+                onLoad={() => void session.load(model)}
+                onRemove={() => void session.remove(model)}
+                onUnload={() => session.stop("")}
+              />
               {busy ? (
                 <button
                   className="send-button"
-                  aria-label={
-                    session.status === "removing" ? "Removing cache…" : "Stop"
-                  }
+                  aria-label="Stop"
                   title="Stop"
-                  disabled={session.status === "removing"}
+                  disabled={
+                    session.status === "removing" ||
+                    session.status === "stopping"
+                  }
                   onClick={() => session.stop()}
                 >
                   <Icon name="stop" />
                 </button>
               ) : (
                 <button
-                  disabled={
-                    session.status !== "ready" || Boolean(inputError(text))
-                  }
                   className="send-button"
-                  aria-label={`${actions[action].label} →`}
+                  aria-label="Send message"
                   title={
                     session.status === "ready"
-                      ? actions[action].label
-                      : "Open the model picker to load a model"
+                      ? "Send message"
+                      : "Open Models to load a model"
                   }
-                  onClick={run}
+                  disabled={session.status !== "ready" || !!inputError(text)}
+                  onClick={() => void send()}
                 >
                   <Icon name="send" />
                 </button>
@@ -480,28 +561,44 @@ export default function App({
             </div>
           </div>
         </div>
+        {session.status === "loading" && (
+          <div className="loading">
+            <progress
+              max={1}
+              value={session.progress.value || undefined}
+              aria-label="Model loading"
+            />
+            <p role="status">{session.progress.message}</p>
+          </div>
+        )}
+        {(session.error || feedback || session.notice) && (
+          <p role="status" className="feedback">
+            {session.error || feedback || session.notice}
+          </p>
+        )}
+        {text && inputError(text) && <p role="alert">{inputError(text)}</p>}
       </section>
-      {inputError(text) && text.length > 0 && (
-        <p role="alert">{inputError(text)}</p>
-      )}
-      {(session.error || feedback) && (
-        <p role="status">{session.error || feedback}</p>
-      )}
-      {session.notice && <p role="status">{session.notice}</p>}
       <dialog
-        ref={infoDialog}
+        ref={info}
         className="info-dialog"
         aria-labelledby="info-title"
+        onClick={(event) => {
+          if (event.target === info.current) info.current?.close();
+        }}
       >
         <h2 id="info-title">About Local Writer</h2>
         <p>
-          Your writing stays on this device. No account or saved writing
-          history.
+          Chat and writing run on this device. Conversations last for this tab’s
+          session.
         </p>
-        <p>Model downloads connect to Hugging Face and the runtime host.</p>
+        <p>
+          Model downloads contact Hugging Face and the runtime host. Review AI
+          answers before using them.
+        </p>
         <form method="dialog">
-          <button title="Close information">
-            <Icon name="close" /> Close
+          <button>
+            <Icon name="close" />
+            Close
           </button>
         </form>
       </dialog>

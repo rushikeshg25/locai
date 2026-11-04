@@ -9,7 +9,10 @@ import { afterEach, expect, it, vi } from "vitest";
 import App from "./App";
 import type { Writer } from "./inference";
 vi.mock("./inference", () => ({ LocalWriter: class {} }));
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 function setup(supported = true, cached = false) {
   const writer: Writer = {
     load: vi.fn().mockResolvedValue(undefined),
@@ -25,169 +28,138 @@ function setup(supported = true, cached = false) {
   return writer;
 }
 async function ready() {
-  const button = screen.getByRole("button", { name: "Download / load model" });
-  await waitFor(() => expect(button).toBeEnabled());
-  fireEvent.click(button);
+  fireEvent.click(screen.getByLabelText("Models"));
+  const load = screen.getByRole("button", { name: "Download / load model" });
+  await waitFor(() => expect(load).toBeEnabled());
+  fireEvent.click(load);
   await screen.findByRole("button", { name: "Model ready" });
 }
-it("requires explicit model loading and disables unsupported devices", async () => {
+async function send(text = "Hello") {
+  fireEvent.change(screen.getByLabelText("Your text"), {
+    target: { value: text },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+  await waitFor(() =>
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument(),
+  );
+}
+it("requires explicit loading and disables unsupported devices", async () => {
   const writer = setup(false);
-  expect(await screen.findByText(/WebGPU is unavailable/)).toBeInTheDocument();
+  await screen.findByText(/WebGPU is unavailable/);
+  fireEvent.click(screen.getByLabelText("Models"));
   expect(
     screen.getByRole("button", { name: "Download / load model" }),
   ).toBeDisabled();
   expect(writer.load).not.toHaveBeenCalled();
 });
-it("runs an action, reviews changes, copies and undoes input replacement", async () => {
+it("defaults to chat and sends prior completed messages", async () => {
   const writer = setup();
   await ready();
-  fireEvent.change(screen.getByLabelText("Your text"), {
-    target: { value: "We might ship Acme Friday" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Fix grammar →" }));
-  await waitFor(() =>
-    expect(screen.getByLabelText("Your result")).toHaveValue(
-      "We might ship Friday.",
-    ),
-  );
-  expect(writer.generate).toHaveBeenCalledWith(
-    {
-      text: "We might ship Acme Friday",
-      action: "grammar",
-      terms: "",
-      instruction: "",
-    },
+  await send("Remember Friday");
+  await send("Which day?");
+  expect(writer.generate).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      mode: "chat",
+      text: "Which day?",
+      history: [
+        { role: "user", content: "Remember Friday" },
+        { role: "assistant", content: "We might ship Friday." },
+      ],
+    }),
     expect.any(Function),
   );
-  expect(screen.getByText("Review grammar changes")).toBeInTheDocument();
-  const writeText = vi.fn().mockResolvedValue(undefined);
-  Object.defineProperty(navigator, "clipboard", {
-    configurable: true,
-    value: { writeText },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Copy result" }));
-  await screen.findByText("Copied.");
-  expect(writeText).toHaveBeenCalledWith("We might ship Friday.");
-  fireEvent.click(screen.getByRole("button", { name: "Use as input" }));
-  expect(screen.getByLabelText("Your text")).toHaveValue(
-    "We might ship Friday.",
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Undo input change" }));
-  expect(screen.getByLabelText("Your text")).toHaveValue(
-    "We might ship Acme Friday",
-  );
+  expect(screen.getAllByLabelText("Assistant message")).toHaveLength(2);
 });
-it("preserves the draft on errors and makes retry possible", async () => {
+it("starts an empty chat without unloading the model", async () => {
   const writer = setup();
-  vi.mocked(writer.generate).mockRejectedValue(new Error("lost device"));
   await ready();
-  fireEvent.change(screen.getByLabelText("Your text"), {
-    target: { value: "My draft" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Fix grammar →" }));
-  expect(await screen.findByText(/Generation failed/)).toBeInTheDocument();
-  expect(screen.getByLabelText("Your text")).toHaveValue("My draft");
-  expect(
-    screen.getByRole("button", { name: "Download / load model" }),
-  ).toBeEnabled();
+  await send();
+  const calls = vi.mocked(writer.dispose).mock.calls.length;
+  fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+  expect(screen.queryByLabelText("Assistant message")).not.toBeInTheDocument();
+  expect(writer.dispose).toHaveBeenCalledTimes(calls);
+  await send("New topic");
+  expect(writer.generate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ history: [] }),
+    expect.any(Function),
+  );
 });
-it("clears output and undo history and rejects overlong input", async () => {
+it("writes and reviews every action without including chat history", async () => {
+  const writer = setup();
+  await ready();
+  fireEvent.click(screen.getByRole("button", { name: /^Write$/ }));
+  fireEvent.change(screen.getByLabelText("More writing actions"), {
+    target: { value: "warmer" },
+  });
+  await send("Send the report.");
+  expect(writer.generate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ mode: "write", action: "warmer" }),
+    expect.any(Function),
+  );
+  expect(screen.getByText("Review changes")).toBeInTheDocument();
+});
+it("preserves failed messages and forks a retry", async () => {
+  const writer = setup();
+  vi.mocked(writer.generate).mockRejectedValueOnce(new Error("lost device"));
+  await ready();
+  await send("My draft");
+  await screen.findByText(/Generation failed/);
+  expect(screen.getByText("My draft")).toBeInTheDocument();
+  await ready();
+  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+  await screen.findByText("We might ship Friday.");
+  expect(
+    screen.getByLabelText("Conversation").querySelectorAll("option"),
+  ).toHaveLength(2);
+});
+it("edit and resend keeps the original branch", async () => {
+  const writer = setup();
+  await ready();
+  await send("First");
+  fireEvent.click(screen.getByRole("button", { name: "Edit & resend" }));
+  await send("Changed");
+  expect(
+    screen.getByLabelText("Conversation").querySelectorAll("option"),
+  ).toHaveLength(2);
+  expect(writer.generate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ text: "Changed", history: [] }),
+    expect.any(Function),
+  );
+});
+it("Enter sends but composition and Shift Enter do not", async () => {
+  const writer = setup();
+  await ready();
+  const input = screen.getByLabelText("Your text");
+  fireEvent.change(input, { target: { value: "Hello" } });
+  fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
+  fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+  expect(writer.generate).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: "Enter" });
+  await waitFor(() => expect(writer.generate).toHaveBeenCalledOnce());
+});
+it("rejects overlong drafts", async () => {
   setup();
   await ready();
   fireEvent.change(screen.getByLabelText("Your text"), {
     target: { value: "word ".repeat(501) },
   });
-  expect(screen.getByRole("button", { name: "Fix grammar →" })).toBeDisabled();
-  fireEvent.click(screen.getByRole("button", { name: "Clear" }));
-  expect(screen.getByLabelText("Your text")).toHaveValue("");
-  expect(screen.getByLabelText("Your result")).toHaveValue("");
-  expect(
-    screen.queryByText(/Cleared writing and unloaded/),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByText(/Each message is a separate/),
-  ).not.toBeInTheDocument();
-  expect(screen.queryByText(/Make it yours/)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
 });
-
-it("keeps setup inside the picker and closes it after loading", async () => {
-  setup();
-  expect(screen.queryByText(/One-time setup/)).not.toBeInTheDocument();
-  fireEvent.click(screen.getByLabelText("Models"));
-  await ready();
-  await waitFor(() =>
-    expect(screen.queryByText(/One-time setup/)).not.toBeInTheDocument(),
-  );
-  expect(
-    screen.getByLabelText("Models").closest("details"),
-  ).not.toHaveAttribute("open");
-});
-it("skips first-use setup when a model is already cached", async () => {
-  const writer = setup(true, true);
-  const load = await screen.findByRole("button", {
-    name: "Load selected model",
-  });
-  expect(screen.queryByText(/One-time setup/)).not.toBeInTheDocument();
-  expect(writer.load).not.toHaveBeenCalled();
-  fireEvent.click(load);
-  await waitFor(() =>
-    expect(
-      screen.queryByRole("button", { name: "Load selected model" }),
-    ).not.toBeInTheDocument(),
-  );
-  expect(writer.load).toHaveBeenCalledOnce();
-});
-
-it("shows per-model cache status and preserves the draft when switching", async () => {
+it("renders Markdown safely without remote images or executable HTML", async () => {
   const writer = setup();
-  vi.mocked(writer.cached).mockImplementation(async (id) =>
-    id.includes("1.5B"),
-  );
-  await ready();
-  fireEvent.change(screen.getByLabelText("Your text"), {
-    target: { value: "Keep my draft" },
+  vi.mocked(writer.generate).mockImplementation(async (_, chunk) => {
+    chunk(
+      "**Bold** <script>alert(1)</script> ![remote](https://example.com/a.png) [bad](javascript:alert(1))",
+    );
+    return { truncated: false };
   });
-  fireEvent.click(screen.getByLabelText("Models"));
-  const larger = screen.getByRole("radio", { name: /Larger/ });
-  await waitFor(() =>
-    expect(larger.closest("label")).toHaveTextContent("Downloaded"),
-  );
-  fireEvent.click(larger);
-  expect(screen.getByLabelText("Your text")).toHaveValue("Keep my draft");
-  expect(writer.load).toHaveBeenCalledTimes(1);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Load selected model" }),
-  );
-  await waitFor(() =>
-    expect(writer.load).toHaveBeenLastCalledWith(
-      "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
-      expect.any(Function),
-    ),
+  await ready();
+  await send();
+  expect(screen.getByText("Bold").tagName).toBe("STRONG");
+  expect(document.querySelector(".markdown script")).toBeNull();
+  expect(document.querySelector(".markdown img")).toBeNull();
+  expect(screen.getByText("bad")).not.toHaveAttribute(
+    "href",
+    "javascript:alert(1)",
   );
 });
-
-it.each(["simplify", "expand", "direct", "warmer"])(
-  "runs the extra %s action without changing the draft",
-  async (action) => {
-    const writer = setup();
-    await ready();
-    fireEvent.change(screen.getByLabelText("Your text"), {
-      target: { value: "We may deliver on Friday." },
-    });
-    fireEvent.change(screen.getByLabelText("More writing actions"), {
-      target: { value: action },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /→$/ }));
-    await waitFor(() =>
-      expect(writer.generate).toHaveBeenCalledWith(
-        expect.objectContaining({ action, text: "We may deliver on Friday." }),
-        expect.any(Function),
-      ),
-    );
-    expect(screen.getByLabelText("Your text")).toHaveValue(
-      "We may deliver on Friday.",
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Fix grammar" }));
-    expect(screen.getByLabelText("More writing actions")).toHaveValue("");
-  },
-);

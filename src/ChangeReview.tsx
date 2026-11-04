@@ -8,7 +8,7 @@ export function ChangeReview({
 }) {
   return (
     <details className="review">
-      <summary>Review grammar changes</summary>
+      <summary>Review changes</summary>
       <p className="muted">
         Deleted text is struck through. Added text is highlighted.
       </p>
