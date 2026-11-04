@@ -29,6 +29,10 @@ import {
   exportMarkdown,
   readAttachments,
 } from "./storage";
+import { LoadingStatus } from "./LoadingStatus";
+import { ServerWriter, type ServerConfig } from "./server";
+import { ServerSettings } from "./ServerSettings";
+import { getPreference, setPreference, preferredModel } from "./preferences";
 import { prepareMessages } from "./prompts";
 export default function App({
   writer: supplied,
@@ -38,10 +42,20 @@ export default function App({
   gpuCheck?: () => Promise<boolean>;
 }) {
   const { theme, toggleTheme } = useTheme();
-  const [writer] = useState(() => supplied ?? new LocalWriter());
+  const [browserWriter] = useState(() => supplied ?? new LocalWriter());
+  const [serverWriter] = useState(() => new ServerWriter());
+  const [provider, setProvider] = useState<"browser" | "server">("browser");
+  const writer = provider === "browser" ? browserWriter : serverWriter;
+  const [serverConfig, setServerConfig] = useState<ServerConfig>(
+    serverWriter.config,
+  );
+  const [autoLoad, setAutoLoad] = useState(
+    () => getPreference("auto-load", "false") === "true",
+  );
+  const autoAttempted = useRef(false);
   const session = useWriter(writer);
   const [supported, setSupported] = useState<boolean | null>(null);
-  const [model, setModel] = useState<string>(models[0].id);
+  const [model, setModel] = useState<string>(preferredModel);
   const [saved] = useState(readSaved);
   const [chats, setChats] = useState<Conversation[]>(() => [
     newConversation(),
@@ -87,7 +101,36 @@ export default function App({
   const busy = ["loading", "writing", "stopping", "removing"].includes(
     session.status,
   );
-  const selected = models.find((item) => item.id === model)!;
+  const selected =
+    provider === "browser"
+      ? models.find((item) => item.id === model)!
+      : {
+          id: serverConfig.model,
+          label: `${serverConfig.model} · local server`,
+        };
+  useEffect(() => {
+    if (
+      autoAttempted.current ||
+      supported !== true ||
+      !autoLoad ||
+      provider !== "browser"
+    )
+      return;
+    let alive = true;
+    browserWriter.cached(model).then(
+      (cached) => {
+        if (alive) {
+          autoAttempted.current = true;
+          if (cached) void session.load(model);
+        }
+      },
+      () =>
+        setFeedback("Could not check the model cache. Load it from Models."),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [supported, autoLoad, provider, model, browserWriter]);
   useEffect(() => {
     let alive = true;
     gpuCheck().then(
@@ -170,6 +213,7 @@ export default function App({
       terms: "",
       instruction: "",
       history: conversationHistory(prefix),
+      contextWindow: provider === "server" ? serverConfig.contextWindow : 4096,
     };
     let budget;
     try {
@@ -191,7 +235,7 @@ export default function App({
       role: "assistant",
       content: "",
       state: "streaming",
-      model,
+      model: selected.id,
       modelLabel: selected.label,
       mode: requestMode,
       action: requestAction,
@@ -229,6 +273,24 @@ export default function App({
       state: result.state,
       truncated: result.truncated,
     });
+  }
+  let contextLabel = "";
+  if (text.trim()) {
+    try {
+      const budget = prepareMessages({
+        text: messageText({ content: text, attachments }),
+        mode: chat.mode,
+        action,
+        terms: "",
+        instruction: "",
+        history: conversationHistory(resend ?? chat.messages),
+        contextWindow:
+          provider === "server" ? serverConfig.contextWindow : 4096,
+      });
+      contextLabel = `Context estimate: ${budget.used} / ${budget.budget} byte units${budget.omitted ? ` · ${budget.omitted} older messages excluded` : ""}`;
+    } catch (cause) {
+      contextLabel = (cause as Error).message;
+    }
   }
   async function copy(content: string) {
     try {
@@ -370,7 +432,7 @@ export default function App({
           </select>
         </label>
       )}
-      {supported === false && (
+      {supported === false && provider === "browser" && (
         <p role="alert" className="banner">
           WebGPU is unavailable. Use a recent desktop browser with hardware
           acceleration, on HTTPS or localhost.
@@ -739,9 +801,38 @@ export default function App({
                 model={model}
                 status={session.status}
                 supported={supported}
+                provider={provider}
+                onProvider={(value) => {
+                  session.stop("");
+                  setProvider(value);
+                }}
+                serverLabel={serverConfig.model}
+                autoLoad={autoLoad}
+                onAutoLoad={(value) => {
+                  setAutoLoad(value);
+                  if (!setPreference("auto-load", String(value)))
+                    setFeedback(
+                      "Could not save the automatic loading preference.",
+                    );
+                }}
+                serverPanel={
+                  <ServerSettings
+                    config={serverConfig}
+                    busy={busy}
+                    ready={session.status === "ready"}
+                    onConnect={(config) => {
+                      serverWriter.configure(config);
+                      setServerConfig(config);
+                      void session.load(config.model);
+                    }}
+                    onDisconnect={() => session.stop("")}
+                  />
+                }
                 onSelect={(id) => {
                   session.stop("");
                   setModel(id);
+                  if (!setPreference("model", id))
+                    setFeedback("Could not remember this model selection.");
                 }}
                 onLoad={() => void session.load(model)}
                 onRemove={() => void session.remove(model)}
@@ -779,19 +870,22 @@ export default function App({
           </div>
         </div>
         {session.status === "loading" && (
-          <div className="loading">
-            <progress
-              max={1}
-              value={session.progress.value || undefined}
-              aria-label="Model loading"
-            />
-            <p role="status">{session.progress.message}</p>
-          </div>
+          <LoadingStatus progress={session.progress} />
         )}
         {(session.error || feedback || session.notice) && (
           <p role="status" className="feedback">
             {session.error || feedback || session.notice}
           </p>
+        )}
+        {contextLabel && (
+          <details className="context-budget">
+            <summary>Context budget</summary>
+            <p>{contextLabel}</p>
+            <p>
+              A conservative UTF-8 byte estimate, not an exact token count.
+              Space is reserved for the reply.
+            </p>
+          </details>
         )}
         {text && inputError(text) && <p role="alert">{inputError(text)}</p>}
       </section>
@@ -810,8 +904,9 @@ export default function App({
           browser until deleted.
         </p>
         <p>
-          Model downloads contact Hugging Face and the runtime host. Review AI
-          answers before using them.
+          Model downloads contact Hugging Face and the runtime host.
+          Local-server mode sends messages and attachments to your configured
+          server. Review AI answers before using them.
         </p>
         <form method="dialog">
           <button>

@@ -651,3 +651,26 @@ del {
   padding: 12px;
   border-radius: 8px;
 }
+.loading-heading {
+  display: flex;
+  justify-content: space-between;
+}
+.context-budget {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 5px 4px 0;
+}
+.context-budget summary {
+  display: inline-block;
+}
+.context-budget p {
+  margin: 4px 0;
+}
+.model-panel > .mode-switch {
+  margin-bottom: 12px;
+}
+.model-panel select {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+}
