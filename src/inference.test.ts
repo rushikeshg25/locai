@@ -5,6 +5,11 @@ const runtime = vi.hoisted(() => ({
   cached: vi.fn(),
 }));
 vi.mock("@mlc-ai/web-llm", () => ({
+  prebuiltAppConfig: {
+    model_list: [
+      { model_id: "model", model_lib: "https://example.com/runtime.wasm" },
+    ],
+  },
   CreateWebWorkerMLCEngine: runtime.create,
   deleteModelAllInfoInCache: runtime.remove,
   hasModelInCache: runtime.cached,
@@ -21,6 +26,7 @@ class FakeWorker {
 }
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.resetAllMocks();
 });
 it("rejects pending initialization when stopped, terminating the worker", async () => {
@@ -69,4 +75,28 @@ it("streams content and reports a token limit", async () => {
   ).toEqual({ truncated: true });
   expect(chunk).toHaveBeenLastCalledWith("Hello world");
   writer.dispose();
+});
+
+it("uses the configured local runtime without changing the model identity", async () => {
+  vi.stubGlobal("Worker", FakeWorker);
+  vi.stubEnv("VITE_RUNTIME_BASE_URL", "/runtime.local/");
+  runtime.create.mockResolvedValue({});
+  await new LocalWriter().load("model", vi.fn());
+  expect(runtime.create).toHaveBeenCalledWith(
+    expect.any(FakeWorker),
+    "model",
+    expect.objectContaining({
+      appConfig: {
+        model_list: [
+          {
+            model_id: "model",
+            model_lib: new URL(
+              "/runtime.local/runtime.wasm",
+              window.location.href,
+            ).href,
+          },
+        ],
+      },
+    }),
+  );
 });

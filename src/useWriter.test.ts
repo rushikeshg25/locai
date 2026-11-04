@@ -110,3 +110,25 @@ describe("inference lifecycle", () => {
     await waitFor(() => expect(result.current.error).toMatch(/site’s storage/));
   });
 });
+it("allows slow initialization but stops after ten minutes", async () => {
+  vi.useFakeTimers();
+  const writer = fake();
+  vi.mocked(writer.load).mockImplementation(() => new Promise(() => {}));
+  const { result } = renderHook(() => useWriter(writer));
+  act(() => {
+    void result.current.load("model");
+  });
+  act(() => vi.advanceTimersByTime(240_000));
+  expect(result.current.status).toBe("loading");
+  act(() => vi.advanceTimersByTime(360_000));
+  expect(result.current.status).toBe("idle");
+  expect(result.current.notice).toMatch(/Loading timed out/);
+  expect(writer.dispose).toHaveBeenCalled();
+});
+it("shows the runtime loading error", async () => {
+  const writer = fake();
+  vi.mocked(writer.load).mockRejectedValue(new Error("Failed to fetch"));
+  const { result } = renderHook(() => useWriter(writer));
+  await act(() => result.current.load("model"));
+  expect(result.current.error).toContain("Failed to fetch");
+});

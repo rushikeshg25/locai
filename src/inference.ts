@@ -1,5 +1,6 @@
 import {
   CreateWebWorkerMLCEngine,
+  prebuiltAppConfig,
   deleteModelAllInfoInCache,
   hasModelInCache,
   type WebWorkerMLCEngine,
@@ -47,6 +48,23 @@ export class LocalWriter implements Writer {
         initProgressCallback: (report) =>
           progress(report.progress, report.text),
         logLevel: "SILENT",
+        ...(import.meta.env.VITE_RUNTIME_BASE_URL
+          ? {
+              appConfig: {
+                ...prebuiltAppConfig,
+                model_list: prebuiltAppConfig.model_list.map((record) => ({
+                  ...record,
+                  model_lib: new URL(
+                    record.model_lib.split("/").pop()!,
+                    new URL(
+                      import.meta.env.VITE_RUNTIME_BASE_URL,
+                      window.location.href,
+                    ),
+                  ).href,
+                })),
+              },
+            }
+          : {}),
       }),
     );
     if (this.worker !== worker) throw new Error("Model loading was cancelled.");

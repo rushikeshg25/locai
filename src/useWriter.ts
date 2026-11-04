@@ -33,22 +33,32 @@ export function useWriter(writer: Writer) {
     setStatus("loading");
     setError("");
     setNotice("");
-    setProgress({ value: 0, message: "Starting…" });
+    setProgress({
+      value: 0,
+      message: "Loading runtime files. Waiting for the first download update…",
+    });
     timer.current = setTimeout(
-      () => stop("Loading timed out. Check your connection and retry."),
+      () =>
+        stop(
+          "Loading timed out. Runtime download or initialization may be stalled. Check your connection and retry.",
+        ),
       600_000,
     );
     try {
       await writer.load(model, (value, message) => {
-        if (id === generation.current) setProgress({ value, message });
+        if (id === generation.current) {
+          setProgress({ value, message });
+        }
       });
       if (id === generation.current) setStatus("ready");
-    } catch {
+    } catch (cause) {
       if (id === generation.current) {
         writer.dispose();
         setStatus("idle");
         setError(
-          "Could not load the model. Check connection, available storage and WebGPU support, then retry.",
+          cause instanceof Error
+            ? `Could not load the model: ${cause.message.slice(0, 500)}`
+            : "Could not load the model. Check connection, available storage and WebGPU support, then retry.",
         );
       }
     } finally {

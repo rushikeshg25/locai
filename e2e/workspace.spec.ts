@@ -11,7 +11,7 @@ test("loads desktop and mobile without overflow or model download", async ({
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Find the right words." }),
+    page.getByRole("heading", { name: "Local Writer" }),
   ).toBeVisible();
   await page
     .getByLabel("Your text")
@@ -25,8 +25,7 @@ test("loads desktop and mobile without overflow or model download", async ({
       ),
     ).toBe(true);
   }
-  await page.getByText("Make it yours").click();
-  await page.getByLabel("Protected terms").fill("Acme");
+  await expect(page.getByText("Make it yours")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Fix grammar →" }),
   ).toBeDisabled();
@@ -52,8 +51,25 @@ test("reloads the cached app offline without retaining drafts", async ({
   await context.setOffline(true);
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Find the right words." }),
+    page.getByRole("heading", { name: "Local Writer" }),
   ).toBeVisible();
   await page.getByLabel("Your text").fill("Offline draft");
   await expect(page.getByLabel("Your text")).toHaveValue("Offline draft");
+});
+
+test("model picker keeps selections open and dismisses outside or with Escape", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const trigger = page.getByLabel("Models", { exact: true });
+  const picker = page.locator(".model-settings");
+  await trigger.click();
+  await page.getByRole("radio", { name: /Larger/ }).check();
+  await expect(picker).toHaveAttribute("open", "");
+  await page.getByLabel("Your text").click();
+  await expect(picker).not.toHaveAttribute("open");
+  await trigger.click();
+  await page.keyboard.press("Escape");
+  await expect(picker).not.toHaveAttribute("open");
+  await expect(trigger).toBeFocused();
 });

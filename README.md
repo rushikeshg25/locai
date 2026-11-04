@@ -18,7 +18,7 @@ No backend, API keys, analytics, or automatic text persistence. Initial model do
 
 ## Features
 
-Fix grammar, change tone, shorten, summarize, or format up to 500 words / 6,000 characters. Optional custom instructions and protected terms guide generation. Grammar changes have a word-level review. Results are editable, copyable, and reusable with one-step input undo.
+Fix grammar, change tone, shorten, summarize, format, simplify, expand, or make writing more direct or warmer up to 500 words / 6,000 characters. Grammar changes have a word-level review. Results are editable, copyable, and reusable with one-step input undo.
 
 ## Device and privacy
 
@@ -33,3 +33,8 @@ Clear removes editor text, review snapshots, undo history and unloads the worker
 See [evaluation instructions and current results](docs/evaluation.md) and [30 quality cases](docs/evaluation-cases.json). Real model inference and quality need verification on a WebGPU-capable device. App tests use fake inference for deterministic interaction checks; they do not prove model quality.
 
 `npm run test:e2e` checks the built app with Chromium. `npm run format:check` checks formatting. GitHub Actions runs type checks, unit/component tests, build, browser tests and a production dependency audit. No deployment is configured.
+
+For a local runtime mirror, set `VITE_RUNTIME_BASE_URL` to a trailing-slash URL
+in `.env.local`, then rebuild. Place the exact Wasm files named by the installed
+WebLLM configuration at that URL. Model weights still download from Hugging Face.
+Without this setting, WebLLM uses its default runtime host.

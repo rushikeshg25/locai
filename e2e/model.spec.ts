@@ -11,6 +11,7 @@ test("real model generates locally and reloads offline", async ({
   await page.goto("/");
   const load = page.getByRole("button", { name: "Download / load model" });
   await expect(load).toBeEnabled({ timeout: 15_000 });
+  await page.getByLabel("Models", { exact: true }).click();
   await load.click();
   await expect(page.getByRole("button", { name: "Model ready" })).toBeVisible({
     timeout: 480_000,
@@ -33,6 +34,7 @@ test("real model generates locally and reloads offline", async ({
   });
   await context.setOffline(true);
   await page.reload();
+  await page.getByLabel("Models", { exact: true }).click();
   await load.click();
   await expect(page.getByRole("button", { name: "Model ready" })).toBeVisible({
     timeout: 120_000,
