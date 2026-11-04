@@ -721,3 +721,22 @@ del {
   float: none;
   margin: 0;
 }
+
+.writing-preferences {
+  margin: 8px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.writing-preferences label {
+  display: block;
+  margin-top: 8px;
+}
+.writing-preferences input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}

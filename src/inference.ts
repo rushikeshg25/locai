@@ -21,6 +21,23 @@ export interface Writer {
   remove(model: string): Promise<void>;
 }
 export class LocalWriter implements Writer {
+  private get appConfig() {
+    return import.meta.env.VITE_RUNTIME_BASE_URL
+      ? {
+          ...prebuiltAppConfig,
+          model_list: prebuiltAppConfig.model_list.map((record) => ({
+            ...record,
+            model_lib: new URL(
+              record.model_lib.split("/").pop()!,
+              new URL(
+                import.meta.env.VITE_RUNTIME_BASE_URL,
+                window.location.href,
+              ),
+            ).href,
+          })),
+        }
+      : prebuiltAppConfig;
+  }
   private worker?: Worker;
   private engine?: WebWorkerMLCEngine;
   private interrupted = false;
@@ -50,23 +67,7 @@ export class LocalWriter implements Writer {
         initProgressCallback: (report) =>
           progress(report.progress, report.text),
         logLevel: "SILENT",
-        ...(import.meta.env.VITE_RUNTIME_BASE_URL
-          ? {
-              appConfig: {
-                ...prebuiltAppConfig,
-                model_list: prebuiltAppConfig.model_list.map((record) => ({
-                  ...record,
-                  model_lib: new URL(
-                    record.model_lib.split("/").pop()!,
-                    new URL(
-                      import.meta.env.VITE_RUNTIME_BASE_URL,
-                      window.location.href,
-                    ),
-                  ).href,
-                })),
-              },
-            }
-          : {}),
+        appConfig: this.appConfig,
       }),
     );
     if (this.worker !== worker) throw new Error("Model loading was cancelled.");
@@ -110,11 +111,11 @@ export class LocalWriter implements Writer {
     this.worker = undefined;
     this.engine = undefined;
   }
-  cached(model: string) {
-    return hasModelInCache(model);
+  async cached(model: string) {
+    return hasModelInCache(model, this.appConfig);
   }
   async remove(model: string) {
     this.dispose();
-    await deleteModelAllInfoInCache(model);
+    await deleteModelAllInfoInCache(model, this.appConfig);
   }
 }

@@ -100,3 +100,16 @@ it("uses the configured local runtime without changing the model identity", asyn
     }),
   );
 });
+
+it("uses the runtime override for cache checks and removal too", async () => {
+  vi.stubGlobal("Worker", FakeWorker);
+  vi.stubEnv("VITE_RUNTIME_BASE_URL", "/runtime.local/");
+  runtime.create.mockResolvedValue({});
+  const writer = new LocalWriter();
+  await writer.load("model", vi.fn());
+  const config = runtime.create.mock.calls[0][2].appConfig;
+  await writer.cached("model");
+  await writer.remove("model");
+  expect(runtime.cached).toHaveBeenCalledWith("model", config);
+  expect(runtime.remove).toHaveBeenCalledWith("model", config);
+});

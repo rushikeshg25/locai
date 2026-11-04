@@ -22,6 +22,7 @@ Open the URL printed by Vite. Updates activate after existing app tabs close, so
 
 ## Chat and writing
 
+- In Write mode, **Writing preferences** accepts protected terms and a custom instruction. Missing protected terms are flagged; retries and edit/resend retain the original preferences. Preferences are stored with the request only when you save its conversation.
 - **Chat** is the default. Completed turns provide context for follow-up questions. **Write** offers ten editing actions, with original/revised word-level comparison.
 - Enter sends; Shift+Enter inserts a newline. The composer grows with the draft and respects IME composition.
 - Replies render Markdown, tables and code with a copy button. Generated HTML is disabled and remote images are not fetched.

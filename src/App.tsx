@@ -1,5 +1,11 @@
 import { Button } from "./Button";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type SetStateAction,
+} from "react";
 import {
   actions,
   primaryActions,
@@ -34,7 +40,7 @@ import { LoadingStatus } from "./LoadingStatus";
 import { ServerWriter, type ServerConfig } from "./server";
 import { ServerSettings } from "./ServerSettings";
 import { getPreference, setPreference, preferredModel } from "./preferences";
-import { prepareMessages } from "./prompts";
+import { prepareMessages, missingTerms } from "./prompts";
 export default function App({
   writer: supplied,
   gpuCheck = checkGPU,
@@ -67,9 +73,22 @@ export default function App({
   const [active, setActive] = useState("");
   const chat = chats.find((item) => item.id === active) ?? chats[0];
   const [text, setText] = useState("");
+  const [terms, setTerms] = useState("");
+  const [instruction, setInstruction] = useState("");
   const [action, setAction] = useState<Action>("grammar");
   const [feedback, setFeedback] = useState(saved.warning);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const attachmentRequest = useRef(0);
+  function replaceAttachments(value: SetStateAction<Attachment[]>) {
+    attachmentRequest.current++;
+    setAttachments(value);
+  }
+  useEffect(
+    () => () => {
+      attachmentRequest.current++;
+    },
+    [],
+  );
   const [selection, setSelection] = useState("");
   const files = useRef<HTMLInputElement>(null);
   const persistFailures = useRef(new Set<string>());
@@ -208,7 +227,7 @@ export default function App({
     setChats((items) => [next, ...items]);
     setActive(next.id);
     setText("");
-    setAttachments([]);
+    replaceAttachments([]);
     setSelection("");
     setResend(null);
     setFeedback("");
@@ -223,6 +242,8 @@ export default function App({
     attached = attachments,
     requestMode = chat.mode,
     requestAction = action,
+    requestTerms = terms,
+    requestInstruction = instruction,
   ) {
     if (busy || session.status !== "ready") return;
     const error = inputError(source);
@@ -234,8 +255,8 @@ export default function App({
       text: messageText({ content: source, attachments: attached }),
       mode: requestMode,
       action: requestAction,
-      terms: "",
-      instruction: "",
+      terms: requestTerms,
+      instruction: requestInstruction,
       history: conversationHistory(prefix),
       contextWindow: provider === "server" ? serverConfig.contextWindow : 4096,
     };
@@ -253,6 +274,8 @@ export default function App({
       attachments: attached,
       mode: requestMode,
       action: requestAction,
+      terms: requestTerms,
+      instruction: requestInstruction,
     };
     const answer: Message = {
       id: crypto.randomUUID(),
@@ -264,6 +287,8 @@ export default function App({
       mode: requestMode,
       action: requestAction,
       source,
+      terms: requestTerms,
+      instruction: requestInstruction,
       omitted: budget.omitted,
     };
     let id = chat.id;
@@ -283,7 +308,7 @@ export default function App({
         messages: [...prefix, user, answer],
       }));
     setText("");
-    setAttachments([]);
+    replaceAttachments([]);
     setSelection("");
     setResend(null);
     setFeedback("");
@@ -305,8 +330,8 @@ export default function App({
         text: messageText({ content: text, attachments }),
         mode: chat.mode,
         action,
-        terms: "",
-        instruction: "",
+        terms,
+        instruction,
         history: conversationHistory(resend ?? chat.messages),
         contextWindow:
           provider === "server" ? serverConfig.contextWindow : 4096,
@@ -420,7 +445,7 @@ export default function App({
               });
               setActive("");
               setText("");
-              setAttachments([]);
+              replaceAttachments([]);
               setResend(null);
             } catch {
               setFeedback(
@@ -443,7 +468,7 @@ export default function App({
             onChange={(event) => {
               setActive(event.target.value);
               setText("");
-              setAttachments([]);
+              replaceAttachments([]);
               setSelection("");
               setResend(null);
               setEdit(null);
@@ -576,12 +601,14 @@ export default function App({
                     title="Edit and resend in a new branch"
                     onClick={() => {
                       setText(message.content);
-                      setAttachments(message.attachments ?? []);
+                      replaceAttachments(message.attachments ?? []);
                       update(chat.id, (item) => ({
                         ...item,
                         mode: message.mode ?? "chat",
                       }));
                       setAction(message.action ?? "grammar");
+                      setTerms(message.terms ?? "");
+                      setInstruction(message.instruction ?? "");
                       setResend(chat.messages.slice(0, index));
                       composer.current?.focus();
                     }}
@@ -606,6 +633,8 @@ export default function App({
                             user.attachments ?? [],
                             user.mode ?? "chat",
                             user.action ?? "grammar",
+                            user.terms ?? "",
+                            user.instruction ?? "",
                           );
                       }}
                     >
@@ -625,7 +654,7 @@ export default function App({
                         setChats((items) => [branch, ...items]);
                         setActive(branch.id);
                         setText("");
-                        setAttachments([]);
+                        replaceAttachments([]);
                         setResend(null);
                         setEdit(null);
                         nearBottom.current = true;
@@ -664,6 +693,24 @@ export default function App({
               </div>
               {message.mode === "write" &&
                 message.role === "assistant" &&
+                message.state !== "streaming" &&
+                message.content &&
+                missingTerms(
+                  message.source ?? "",
+                  message.content,
+                  message.terms ?? "",
+                ).length > 0 && (
+                  <p role="alert">
+                    Review missing protected terms:{" "}
+                    {missingTerms(
+                      message.source ?? "",
+                      message.content,
+                      message.terms ?? "",
+                    ).join(", ")}
+                  </p>
+                )}
+              {message.mode === "write" &&
+                message.role === "assistant" &&
                 message.content &&
                 message.state !== "streaming" && (
                   <ChangeReview
@@ -695,7 +742,7 @@ export default function App({
             disabled={busy}
             onClick={() => {
               setText(selection);
-              setAttachments([]);
+              replaceAttachments([]);
               setSelection("");
               setResend(null);
               update(chat.id, (item) => ({ ...item, mode: "write" }));
@@ -752,6 +799,34 @@ export default function App({
             </div>
           )}
         </div>
+        {chat.mode === "write" && (
+          <details className="writing-preferences">
+            <summary>Writing preferences · optional</summary>
+            <label>
+              Protected terms
+              <input
+                value={terms}
+                maxLength={300}
+                disabled={busy}
+                onChange={(event) => setTerms(event.target.value)}
+                placeholder="PostgreSQL, Acme, API"
+              />
+            </label>
+            <small>
+              Comma-separated. Missing terms are flagged for review.
+            </small>
+            <label>
+              Custom instruction
+              <input
+                value={instruction}
+                maxLength={300}
+                disabled={busy}
+                onChange={(event) => setInstruction(event.target.value)}
+                placeholder="Be polite but direct."
+              />
+            </label>
+          </details>
+        )}
         {resend !== null && (
           <div className="draft-note">
             Editing a previous request · original conversation will be kept.
@@ -803,7 +878,7 @@ export default function App({
                     aria-label={`Remove ${file.name}`}
                     disabled={busy}
                     onClick={() =>
-                      setAttachments((items) =>
+                      replaceAttachments((items) =>
                         items.filter((_, i) => i !== index),
                       )
                     }
@@ -825,12 +900,16 @@ export default function App({
               multiple
               disabled={busy}
               onChange={async (event) => {
+                const request = ++attachmentRequest.current;
                 const selected = Array.from(event.target.files ?? []);
                 event.target.value = "";
                 try {
-                  setAttachments(await readAttachments(selected));
+                  const next = await readAttachments(selected);
+                  if (request !== attachmentRequest.current) return;
+                  replaceAttachments(next);
                   setFeedback("");
                 } catch (cause) {
+                  if (request !== attachmentRequest.current) return;
                   setFeedback((cause as Error).message);
                 }
               }}

@@ -29,7 +29,22 @@ test("loads desktop and mobile without overflow or model download", async ({
       ),
     ).toBe(true);
   }
-  await expect(page.getByText("Make it yours")).toHaveCount(0);
+  await page.getByRole("button", { name: "Write", exact: true }).click();
+  await page
+    .getByText("Writing preferences · optional", { exact: true })
+    .click();
+  await page.getByLabel("Protected terms").fill("Acme");
+  await page.getByLabel("Custom instruction").fill("Be direct");
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.getByLabel("Protected terms")).toBeInViewport();
+    await expect(page.getByLabel("Custom instruction")).toBeInViewport();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
   await expect(
     page.getByRole("button", { name: "Send message" }),
   ).toBeDisabled();

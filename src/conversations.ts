@@ -14,6 +14,8 @@ export interface Message {
   action?: Action;
   state?: "streaming" | "complete" | "stopped" | "error";
   source?: string;
+  terms?: string;
+  instruction?: string;
   attachments?: Attachment[];
   omitted?: number;
   truncated?: boolean;

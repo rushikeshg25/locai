@@ -18,6 +18,8 @@ function validMessage(value: unknown): value is Message {
             a && typeof a.name === "string" && typeof a.content === "string",
         ))) &&
     (m.modelLabel === undefined || typeof m.modelLabel === "string") &&
+    (m.terms === undefined || typeof m.terms === "string") &&
+    (m.instruction === undefined || typeof m.instruction === "string") &&
     (m.source === undefined || typeof m.source === "string") &&
     (m.model === undefined || typeof m.model === "string") &&
     (m.omitted === undefined ||

@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -284,3 +285,69 @@ it("stops saving a stale copy when another tab changes it", async () => {
   expect(screen.getByText("Temporary chat")).toBeInTheDocument();
   expect(localStorage.getItem(key)).toBeNull();
 });
+
+it("restores writing preferences and retains them when retrying", async () => {
+  const writer = setup();
+  await ready();
+  fireEvent.click(screen.getByRole("button", { name: /^Write$/ }));
+  fireEvent.change(screen.getByLabelText("Protected terms"), {
+    target: { value: "Acme" },
+  });
+  fireEvent.change(screen.getByLabelText("Custom instruction"), {
+    target: { value: "Be direct" },
+  });
+  await send("Acme might ship Friday.");
+  expect(writer.generate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ terms: "Acme", instruction: "Be direct" }),
+    expect.any(Function),
+  );
+  expect(
+    screen.getByText(/Review missing protected terms: Acme/),
+  ).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Protected terms"), {
+    target: { value: "Different" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+  await waitFor(() => expect(writer.generate).toHaveBeenCalledTimes(2));
+  expect(writer.generate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ terms: "Acme", instruction: "Be direct" }),
+    expect.any(Function),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Edit & resend" }));
+  expect(screen.getByLabelText("Protected terms")).toHaveValue("Acme");
+  expect(screen.getByLabelText("Custom instruction")).toHaveValue("Be direct");
+});
+
+it.each(["new chat", "send", "newer file"])(
+  "ignores stale attachment completion after %s",
+  async (transition) => {
+    setup();
+    await ready();
+    let resolve!: (value: ArrayBuffer) => void;
+    const pending = new Promise<ArrayBuffer>((done) => {
+      resolve = done;
+    });
+    const old = new File(["old"], "old.txt", { type: "text/plain" });
+    Object.defineProperty(old, "arrayBuffer", { value: () => pending });
+    const picker = screen.getByLabelText("Text file selection");
+    fireEvent.change(picker, { target: { files: [old] } });
+    if (transition === "new chat")
+      fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    if (transition === "send") await send("Current message");
+    if (transition === "newer file") {
+      const next = new File(["new"], "new.txt", { type: "text/plain" });
+      Object.defineProperty(next, "arrayBuffer", {
+        value: async () => new TextEncoder().encode("new").buffer,
+      });
+      fireEvent.change(picker, { target: { files: [next] } });
+      await screen.findByLabelText("Remove new.txt");
+    }
+    await act(async () => {
+      resolve(new TextEncoder().encode("old").buffer);
+      await pending;
+    });
+    expect(screen.queryByLabelText("Remove old.txt")).not.toBeInTheDocument();
+    if (transition === "newer file")
+      expect(screen.getByLabelText("Remove new.txt")).toBeInTheDocument();
+  },
+);
