@@ -34,7 +34,7 @@ describe("inference lifecycle", () => {
     });
     const { result } = renderHook(() => useWriter(writer));
     await act(() => result.current.load("model"));
-    let pending!: Promise<void>;
+    let pending!: Promise<unknown>;
     act(() => {
       pending = result.current.run(request);
     });
@@ -62,7 +62,7 @@ describe("inference lifecycle", () => {
       });
     });
     const { result } = renderHook(() => useWriter(writer));
-    let pending!: Promise<void>;
+    let pending!: Promise<unknown>;
     act(() => {
       pending = result.current.load("model");
     });
@@ -131,4 +131,31 @@ it("shows the runtime loading error", async () => {
   const { result } = renderHook(() => useWriter(writer));
   await act(() => result.current.load("model"));
   expect(result.current.error).toContain("Failed to fetch");
+});
+
+it("interrupts generation without unloading the model and keeps partial output", async () => {
+  const writer = fake();
+  let finish!: () => void;
+  writer.interrupt = vi.fn(() => finish());
+  vi.mocked(writer.generate).mockImplementation(async (_request, emit) => {
+    emit("Partial");
+    await new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    return { truncated: false };
+  });
+  const { result } = renderHook(() => useWriter(writer));
+  await act(() => result.current.load("model"));
+  let pending!: Promise<unknown>;
+  act(() => {
+    pending = result.current.run(request);
+  });
+  await act(async () => {
+    result.current.stop();
+    await pending;
+  });
+  expect(writer.interrupt).toHaveBeenCalledOnce();
+  expect(writer.dispose).not.toHaveBeenCalled();
+  expect(result.current.status).toBe("ready");
+  expect(result.current.output).toBe("Partial");
 });

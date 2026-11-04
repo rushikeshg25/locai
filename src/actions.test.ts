@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { inputError, wordCount } from "./actions";
-import { buildMessages, missingTerms, protectedTerms } from "./prompts";
+import {
+  prepareMessages,
+  buildMessages,
+  missingTerms,
+  protectedTerms,
+} from "./prompts";
 describe("writing contracts", () => {
   it("rejects empty or oversized input without silently truncating", () => {
     expect(inputError("  \n")).toMatch(/first/);
@@ -30,4 +35,45 @@ describe("writing contracts", () => {
       "API",
     ]);
   });
+});
+
+it("chat includes previous turns and does not apply rewrite instructions", () => {
+  const messages = buildMessages({
+    text: "Why?",
+    action: "grammar",
+    terms: "",
+    instruction: "",
+    mode: "chat",
+    history: [
+      { role: "user", content: "What is Wasm?" },
+      { role: "assistant", content: "A portable binary format." },
+    ],
+  });
+  expect(messages).toHaveLength(4);
+  expect(messages[0].content).not.toContain("editing");
+  expect(messages[2].content).toBe("A portable binary format.");
+});
+
+it("drops oldest complete turns and rejects an oversized latest message", () => {
+  const base = {
+    text: "Latest",
+    action: "grammar" as const,
+    terms: "",
+    instruction: "",
+    mode: "chat" as const,
+  };
+  const fitted = prepareMessages({
+    ...base,
+    history: [
+      { role: "user", content: "x".repeat(2500) },
+      { role: "assistant", content: "Old reply" },
+      { role: "user", content: "Recent" },
+      { role: "assistant", content: "Recent reply" },
+    ],
+  });
+  expect(fitted.omitted).toBe(2);
+  expect(fitted.messages[1].content).toBe("Recent");
+  expect(() => prepareMessages({ ...base, text: "x".repeat(5000) })).toThrow(
+    /context budget/,
+  );
 });

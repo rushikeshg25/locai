@@ -5,7 +5,7 @@ import {
   hasModelInCache,
   type WebWorkerMLCEngine,
 } from "@mlc-ai/web-llm";
-import { buildMessages, type WritingRequest } from "./prompts";
+import { prepareMessages, type WritingRequest } from "./prompts";
 export interface Writer {
   load(
     model: string,
@@ -15,6 +15,7 @@ export interface Writer {
     request: WritingRequest,
     chunk: (text: string) => void,
   ): Promise<{ truncated: boolean }>;
+  interrupt?(): void;
   dispose(): void;
   cached(model: string): Promise<boolean>;
   remove(model: string): Promise<void>;
@@ -22,6 +23,7 @@ export interface Writer {
 export class LocalWriter implements Writer {
   private worker?: Worker;
   private engine?: WebWorkerMLCEngine;
+  private interrupted = false;
   private rejectPending?: (error: Error) => void;
   private guarded<T>(operation: Promise<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
@@ -73,12 +75,13 @@ export class LocalWriter implements Writer {
   async generate(request: WritingRequest, chunk: (text: string) => void) {
     const engine = this.engine;
     if (!engine) throw new Error("Load a model first.");
+    this.interrupted = false;
     return this.guarded(
       (async () => {
         const stream = await engine.chat.completions.create({
-          messages: buildMessages(request),
+          messages: prepareMessages(request).messages,
           stream: true,
-          temperature: 0.2,
+          temperature: request.mode === "chat" ? 0.7 : 0.2,
           max_tokens: 1200,
         });
         let text = "";
@@ -88,11 +91,15 @@ export class LocalWriter implements Writer {
           truncated ||= part.choices[0]?.finish_reason === "length";
           chunk(text);
         }
-        if (!text.trim())
+        if (!text.trim() && !this.interrupted)
           throw new Error("The model returned no text. Try a shorter input.");
         return { truncated };
       })(),
     );
+  }
+  interrupt() {
+    this.interrupted = true;
+    this.engine?.interruptGenerate();
   }
   dispose() {
     this.rejectPending?.(

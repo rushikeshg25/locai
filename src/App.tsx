@@ -105,6 +105,7 @@ export default function App({
   const busy =
     session.status === "loading" ||
     session.status === "writing" ||
+    session.status === "stopping" ||
     session.status === "removing";
   const selected = models.find((item) => item.id === model)!;
   useEffect(() => {
