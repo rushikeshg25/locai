@@ -607,3 +607,47 @@ del {
     scroll-behavior: auto !important;
   }
 }
+.chat-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.chat-controls small {
+  margin-right: auto;
+}
+.chat-controls button {
+  font-size: 11px;
+  padding: 5px 8px;
+  min-height: 30px;
+}
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+}
+.attachments > span {
+  background: var(--soft);
+  border-radius: 7px;
+  padding-left: 8px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.attachments button {
+  padding: 4px 8px;
+  min-height: 28px;
+}
+.attachment-preview {
+  font-size: 12px;
+  margin: 8px 0;
+}
+.attachment-preview pre {
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow: auto;
+  background: var(--surface);
+  padding: 12px;
+  border-radius: 8px;
+}

@@ -1,4 +1,5 @@
 const paths = {
+  attach: "m21 11-8 8a6 6 0 0 1-8-8l9-9a4 4 0 0 1 6 6L10 18a2 2 0 0 1-3-3l9-9",
   more: "M5 12h.01 M12 12h.01 M19 12h.01",
   simplify: "M4 6h16 M4 12h10 M4 18h6",
   expand: "M4 5h16 M4 12h16 M4 19h16 M12 8v8 M8 12h8",

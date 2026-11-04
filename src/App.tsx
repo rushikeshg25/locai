@@ -20,7 +20,15 @@ import {
   messageText,
   type Message,
   type Conversation,
+  type Attachment,
 } from "./conversations";
+import {
+  readSaved,
+  saveChat,
+  forgetChat,
+  exportMarkdown,
+  readAttachments,
+} from "./storage";
 import { prepareMessages } from "./prompts";
 export default function App({
   writer: supplied,
@@ -34,12 +42,40 @@ export default function App({
   const session = useWriter(writer);
   const [supported, setSupported] = useState<boolean | null>(null);
   const [model, setModel] = useState<string>(models[0].id);
-  const [chats, setChats] = useState<Conversation[]>(() => [newConversation()]);
+  const [saved] = useState(readSaved);
+  const [chats, setChats] = useState<Conversation[]>(() => [
+    newConversation(),
+    ...saved.chats,
+  ]);
   const [active, setActive] = useState("");
   const chat = chats.find((item) => item.id === active) ?? chats[0];
   const [text, setText] = useState("");
   const [action, setAction] = useState<Action>("grammar");
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState(saved.warning);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [selection, setSelection] = useState("");
+  const files = useRef<HTMLInputElement>(null);
+  const persistFailures = useRef(new Set<string>());
+  useEffect(() => {
+    for (const item of chats) {
+      if (
+        !item.saved ||
+        item.messages.some((message) => message.state === "streaming")
+      )
+        continue;
+      try {
+        saveChat(item);
+        persistFailures.current.delete(item.id);
+      } catch {
+        if (!persistFailures.current.has(item.id)) {
+          setFeedback(
+            "Could not update the saved conversation. Export it to keep your latest changes.",
+          );
+          persistFailures.current.add(item.id);
+        }
+      }
+    }
+  }, [chats]);
   const [edit, setEdit] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [resend, setResend] = useState<Message[] | null>(null);
@@ -105,6 +141,8 @@ export default function App({
     setChats((items) => [next, ...items]);
     setActive(next.id);
     setText("");
+    setAttachments([]);
+    setSelection("");
     setResend(null);
     setFeedback("");
     setEdit(null);
@@ -115,6 +153,9 @@ export default function App({
     source = text,
     prefix = resend ?? chat.messages,
     fork = resend !== null,
+    attached = attachments,
+    requestMode = chat.mode,
+    requestAction = action,
   ) {
     if (busy || session.status !== "ready") return;
     const error = inputError(source);
@@ -123,9 +164,9 @@ export default function App({
       return;
     }
     const request = {
-      text: source,
-      mode: chat.mode,
-      action,
+      text: messageText({ content: source, attachments: attached }),
+      mode: requestMode,
+      action: requestAction,
       terms: "",
       instruction: "",
       history: conversationHistory(prefix),
@@ -141,8 +182,9 @@ export default function App({
       id: crypto.randomUUID(),
       role: "user",
       content: source,
-      mode: chat.mode,
-      action,
+      attachments: attached,
+      mode: requestMode,
+      action: requestAction,
     };
     const answer: Message = {
       id: crypto.randomUUID(),
@@ -151,15 +193,15 @@ export default function App({
       state: "streaming",
       model,
       modelLabel: selected.label,
-      mode: chat.mode,
-      action,
+      mode: requestMode,
+      action: requestAction,
       source,
       omitted: budget.omitted,
     };
     let id = chat.id;
     if (fork) {
       const branch = {
-        ...newConversation(chat.mode),
+        ...newConversation(requestMode),
         title: `${source.slice(0, 36)} (branch)`,
         messages: [...prefix, user, answer],
       };
@@ -173,6 +215,8 @@ export default function App({
         messages: [...prefix, user, answer],
       }));
     setText("");
+    setAttachments([]);
+    setSelection("");
     setResend(null);
     setFeedback("");
     nearBottom.current = true;
@@ -226,6 +270,80 @@ export default function App({
           </button>
         </div>
       </header>
+      <div className="chat-controls">
+        <small>{chat.saved ? "Saved on this device" : "Temporary chat"}</small>
+        <button
+          className="secondary"
+          disabled={busy || !chat.messages.length}
+          onClick={() => {
+            try {
+              if (chat.saved) {
+                forgetChat(chat.id);
+                update(chat.id, (item) => ({ ...item, saved: false }));
+                setFeedback(
+                  "Removed from device storage. This tab still has the conversation.",
+                );
+              } else {
+                saveChat(chat);
+                update(chat.id, (item) => ({ ...item, saved: true }));
+                setFeedback(
+                  "Saved on this device. Future changes to this chat will also be saved.",
+                );
+              }
+            } catch {
+              setFeedback(
+                "Could not change browser storage. Export the conversation to keep a copy.",
+              );
+            }
+          }}
+        >
+          {chat.saved ? "Make temporary" : "Save on device"}
+        </button>
+        <button
+          className="secondary"
+          disabled={!chat.messages.length}
+          onClick={() => {
+            const url = URL.createObjectURL(
+              new Blob([exportMarkdown(chat)], {
+                type: "text/markdown;charset=utf-8",
+              }),
+            );
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "local-writer-chat.md";
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }}
+        >
+          Export
+        </button>
+        <button
+          className="secondary"
+          disabled={busy}
+          title="Delete this conversation and its saved copy"
+          onClick={() => {
+            if (!window.confirm("Delete this conversation and its saved copy?"))
+              return;
+            try {
+              forgetChat(chat.id);
+              setChats((items) => {
+                const remaining = items.filter((item) => item.id !== chat.id);
+                return remaining.length ? remaining : [newConversation()];
+              });
+              setActive("");
+              setText("");
+              setAttachments([]);
+              setResend(null);
+            } catch {
+              setFeedback(
+                "Could not delete the saved copy. Browser storage may be blocked.",
+              );
+            }
+          }}
+        >
+          Delete
+        </button>
+      </div>
       {chats.length > 1 && (
         <label className="conversation-switch">
           Conversation{" "}
@@ -236,6 +354,8 @@ export default function App({
             onChange={(event) => {
               setActive(event.target.value);
               setText("");
+              setAttachments([]);
+              setSelection("");
               setResend(null);
               setEdit(null);
               nearBottom.current = true;
@@ -259,6 +379,16 @@ export default function App({
       <div
         className="transcript"
         ref={scroll}
+        onMouseUp={() => {
+          const selected = window.getSelection();
+          setSelection(
+            selected &&
+              scroll.current?.contains(selected.anchorNode) &&
+              scroll.current?.contains(selected.focusNode)
+              ? selected.toString()
+              : "",
+          );
+        }}
         onScroll={() => {
           const el = scroll.current!;
           nearBottom.current =
@@ -313,6 +443,12 @@ export default function App({
               ) : (
                 <Markdown text={message.content} />
               )}
+              {message.attachments?.map((file, index) => (
+                <details className="attachment-preview" key={index}>
+                  <summary>{file.name}</summary>
+                  <pre>{file.content}</pre>
+                </details>
+              ))}
               {message.state === "streaming" && (
                 <small role="status">
                   {message.content ? "Responding…" : "Thinking…"}
@@ -351,6 +487,12 @@ export default function App({
                     title="Edit and resend in a new branch"
                     onClick={() => {
                       setText(message.content);
+                      setAttachments(message.attachments ?? []);
+                      update(chat.id, (item) => ({
+                        ...item,
+                        mode: message.mode ?? "chat",
+                      }));
+                      setAction(message.action ?? "grammar");
                       setResend(chat.messages.slice(0, index));
                       composer.current?.focus();
                     }}
@@ -369,9 +511,12 @@ export default function App({
                         const user = chat.messages[index - 1];
                         if (user)
                           void send(
-                            messageText(user),
+                            user.content,
                             chat.messages.slice(0, index - 1),
                             true,
+                            user.attachments ?? [],
+                            user.mode ?? "chat",
+                            user.action ?? "grammar",
                           );
                       }}
                     >
@@ -431,6 +576,22 @@ export default function App({
         </button>
       )}
       <section className="compose-area" aria-label="Message composer">
+        {selection.trim() && (
+          <button
+            className="secondary"
+            disabled={busy}
+            onClick={() => {
+              setText(selection);
+              setAttachments([]);
+              setSelection("");
+              setResend(null);
+              update(chat.id, (item) => ({ ...item, mode: "write" }));
+              composer.current?.focus();
+            }}
+          >
+            Rewrite selected text
+          </button>
+        )}
         <div className="compose-options">
           <div className="mode-switch" role="group" aria-label="Mode">
             {(["chat", "write"] as const).map((mode) => (
@@ -496,7 +657,14 @@ export default function App({
             rows={2}
             value={text}
             disabled={busy}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setText(event.target.value);
+              setSelection("");
+            }}
+            onSelect={(event) => {
+              const el = event.currentTarget;
+              setSelection(el.value.slice(el.selectionStart, el.selectionEnd));
+            }}
             onKeyDown={(event) => {
               if (
                 event.key === "Enter" &&
@@ -512,7 +680,56 @@ export default function App({
               chat.mode === "chat" ? "Message…" : "Paste or write a draft…"
             }
           />
+          {attachments.length > 0 && (
+            <div className="attachments">
+              {attachments.map((file, index) => (
+                <span key={index}>
+                  {file.name}
+                  <button
+                    className="secondary"
+                    aria-label={`Remove ${file.name}`}
+                    disabled={busy}
+                    onClick={() =>
+                      setAttachments((items) =>
+                        items.filter((_, i) => i !== index),
+                      )
+                    }
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
           <div className="composer-footer">
+            <input
+              ref={files}
+              className="sr-only"
+              aria-label="Attach text files"
+              type="file"
+              accept=".txt,.md,.markdown"
+              multiple
+              disabled={busy}
+              onChange={async (event) => {
+                const selected = Array.from(event.target.files ?? []);
+                event.target.value = "";
+                try {
+                  setAttachments(await readAttachments(selected));
+                  setFeedback("");
+                } catch (cause) {
+                  setFeedback((cause as Error).message);
+                }
+              }}
+            />
+            <button
+              className="secondary icon-button"
+              aria-label="Attach text files"
+              title="Attach up to 3 UTF-8 text or Markdown files, 24 KB total"
+              disabled={busy}
+              onClick={() => files.current?.click()}
+            >
+              <Icon name="attach" />
+            </button>
             <span className="muted keyboard-hint">
               Shift + Enter for a new line
             </span>
@@ -588,8 +805,9 @@ export default function App({
       >
         <h2 id="info-title">About Local Writer</h2>
         <p>
-          Chat and writing run on this device. Conversations last for this tab’s
-          session.
+          Browser models run on this device. Chats are temporary unless you
+          choose Save on device. Saved chats and attachments remain in this
+          browser until deleted.
         </p>
         <p>
           Model downloads contact Hugging Face and the runtime host. Review AI
