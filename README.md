@@ -20,6 +20,25 @@ npm run preview -- --host 127.0.0.1 --port 4174
 
 Open the URL printed by Vite. Updates activate after existing app tabs close, so an update does not discard an active draft.
 
+## Docker
+
+```sh
+docker compose up --build -d
+```
+
+Open http://localhost:4174. Set `PORT=8080` before the command to use a different host port. Stop with `docker compose down`. Containers do not need GPU access: inference and model caching still happen in your browser. Saved chats stay in browser storage, not a Docker volume. Keep the same hostname and port to reuse existing browser data.
+
+The multi-stage image builds with Node 24 and serves static files with Nginx as a non-root user. Compose uses a read-only filesystem with temporary runtime storage. It binds to localhost; use an HTTPS reverse proxy for access from another machine because browser WebGPU requires a secure context.
+
+Local `.env` files, downloaded `*.local` runtime folders, Git history and logs are excluded from the image. The default build uses WebLLM's runtime host. To use an existing external runtime mirror, pass its URL at build time:
+
+```sh
+VITE_RUNTIME_BASE_URL=https://your-runtime-host.example/ docker compose build
+docker compose up -d
+```
+
+This value is public client configuration, not a secret. Changing it requires rebuilding. No model weights are bundled in the image.
+
 ## Chat and writing
 
 - In Write mode, **Writing preferences** accepts protected terms and a custom instruction. Missing protected terms are flagged; retries and edit/resend retain the original preferences. Preferences are stored with the request only when you save its conversation.

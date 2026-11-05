@@ -1,0 +1,21 @@
+name: Docker
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start production container
+        run: docker compose up --build --wait --wait-timeout 120
+      - name: Check app and service worker
+        run: |
+          curl --fail --silent http://localhost:4174/ | grep -q '<title>Local Writer</title>'
+          curl --fail --silent --output /dev/null http://localhost:4174/sw.js
+      - name: Container logs
+        if: failure()
+        run: docker compose logs
+      - name: Stop container
+        if: always()
+        run: docker compose down
