@@ -774,11 +774,6 @@ del {
   margin: 0;
 }
 
-.writing-preferences label {
-  display: block;
-  margin-top: 8px;
-}
-
 .starter-prompts {
   display: flex;
   justify-content: center;
@@ -1309,9 +1304,6 @@ del {
 .writing-tools-panel .actions select {
   grid-column: 1 / -1;
   min-height: 40px;
-}
-.writing-preferences > summary {
-  padding: 4px 0;
 }
 .app-brand {
   display: flex;

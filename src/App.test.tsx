@@ -8,6 +8,8 @@ import {
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import App from "./App";
+import { newConversation } from "./conversations";
+import { saveChat } from "./storage";
 import type { Writer } from "./inference";
 vi.mock("./inference", () => ({ LocalWriter: class {} }));
 afterEach(() => {
@@ -284,36 +286,51 @@ it("stops saving a stale copy when another tab changes it", async () => {
   expect(localStorage.getItem(key)).toBeNull();
 });
 
-it("restores writing preferences and retains them when retrying", async () => {
+it("keeps legacy retry metadata without exposing writing preference fields", async () => {
+  const chat = newConversation("write");
+  chat.title = "Legacy draft";
+  chat.messages = [
+    {
+      id: "u",
+      role: "user",
+      content: "Acme might ship Friday.",
+      mode: "write",
+      terms: "Acme",
+      instruction: "Be direct",
+    },
+    {
+      id: "a",
+      role: "assistant",
+      content: "We might ship Friday.",
+      state: "complete",
+      mode: "write",
+      terms: "Acme",
+      instruction: "Be direct",
+    },
+  ];
+  saveChat(chat);
   const writer = setup();
   await ready();
-  fireEvent.click(screen.getByRole("button", { name: /^Write$/ }));
-  fireEvent.change(screen.getByLabelText("Protected terms"), {
-    target: { value: "Acme" },
-  });
-  fireEvent.change(screen.getByLabelText("Custom instruction"), {
-    target: { value: "Be direct" },
-  });
-  await send("Acme might ship Friday.");
-  expect(writer.generate).toHaveBeenLastCalledWith(
-    expect.objectContaining({ terms: "Acme", instruction: "Be direct" }),
-    expect.any(Function),
+  fireEvent.click(
+    screen.getByRole("button", { name: "Open chat: Legacy draft" }),
   );
-  expect(
-    screen.getByText(/Review missing protected terms: Acme/),
-  ).toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText("Protected terms"), {
-    target: { value: "Different" },
-  });
+  expect(screen.queryByLabelText("Protected terms")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Custom instruction")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-  await waitFor(() => expect(writer.generate).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(writer.generate).toHaveBeenCalledTimes(1));
   expect(writer.generate).toHaveBeenLastCalledWith(
     expect.objectContaining({ terms: "Acme", instruction: "Be direct" }),
     expect.any(Function),
   );
   fireEvent.click(screen.getByRole("button", { name: "Edit & resend" }));
-  expect(screen.getByLabelText("Protected terms")).toHaveValue("Acme");
-  expect(screen.getByLabelText("Custom instruction")).toHaveValue("Be direct");
+  expect(screen.getByLabelText("Your text")).toHaveValue(
+    "Acme might ship Friday.",
+  );
+  await send("Make this more direct: Acme might ship Friday.");
+  expect(writer.generate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ terms: "", instruction: "" }),
+    expect.any(Function),
+  );
 });
 
 it.each(["new chat", "send", "newer file"])(
