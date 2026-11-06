@@ -1217,3 +1217,48 @@ del {
   color: var(--muted);
   line-height: 1.5;
 }
+
+/* Writing tools overlay the conversation instead of changing composer height. */
+.compose-options {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.writing-tools {
+  min-width: 0;
+}
+.writing-tools > summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 12px;
+  list-style: none;
+}
+.writing-tools > summary::-webkit-details-marker {
+  display: none;
+}
+.writing-tools > summary span:first-of-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.writing-tools-panel {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 14px;
+  max-height: min(420px, 50dvh);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px #0003;
+}
+.writing-tools-panel .writing-preferences {
+  margin-bottom: 0;
+}

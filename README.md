@@ -92,7 +92,7 @@ IME composition does not submit a message. Icon controls have accessible labels;
 
 ### Writing controls and limits
 
-In Write mode, **Writing preferences** accepts a custom instruction and protected terms such as names or product identifiers. Missing protected terms are flagged for review. Select part of a draft or reply and use **Rewrite selected text** to start a separate writing request.
+In Write mode, open the writing-tools dropdown beside Chat/Write to choose an action or expand **Writing preferences**. The panel overlays the conversation without moving the composer. **Writing preferences** accepts a custom instruction and protected terms such as names or product identifiers. Missing protected terms are flagged for review. Select part of a draft or reply and use **Rewrite selected text** to start a separate writing request.
 
 | Input                    | Limit                                             |
 | ------------------------ | ------------------------------------------------- |

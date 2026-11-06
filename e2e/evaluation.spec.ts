@@ -37,6 +37,7 @@ test("collect real browser-model outputs for human quality review", async ({
     for (const sample of cases) {
       await page.getByRole("button", { name: "New chat" }).click();
       await page.getByRole("button", { name: "Write", exact: true }).click();
+      await page.getByLabel("Writing tools", { exact: true }).click();
       if (labels[sample.action])
         await page
           .getByRole("button", { name: labels[sample.action], exact: true })

@@ -54,8 +54,15 @@ export default function App({
     () => !(window.matchMedia?.("(max-width: 900px)").matches ?? false),
   );
   const chatMenu = useRef<HTMLDetailsElement>(null);
+  const writingTools = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const dismiss = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        writingTools.current &&
+        !writingTools.current.contains(event.target)
+      )
+        writingTools.current.open = false;
       if (
         event.target instanceof Node &&
         !chatMenu.current?.contains(event.target) &&
@@ -64,6 +71,10 @@ export default function App({
         chatMenu.current.open = false;
     };
     const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && writingTools.current?.open) {
+        writingTools.current.open = false;
+        writingTools.current.querySelector("summary")?.focus();
+      }
       if (event.key === "Escape" && chatMenu.current?.open) {
         chatMenu.current.open = false;
         chatMenu.current.querySelector("summary")?.focus();
@@ -913,70 +924,79 @@ export default function App({
               ))}
             </div>
             {chat.mode === "write" && (
-              <div
-                className="actions"
-                role="group"
-                aria-label="Writing actions"
-              >
-                {primaryActions.map((key) => (
-                  <Button
-                    key={key}
-                    className="secondary"
-                    aria-pressed={key === action}
-                    title={actions[key].instruction}
-                    disabled={busy}
-                    onClick={() => setAction(key)}
+              <details className="writing-tools" ref={writingTools}>
+                <summary aria-label="Writing tools">
+                  <Icon name={action} />
+                  <span>{actions[action].label}</span>
+                  <span aria-hidden="true">⌄</span>
+                </summary>
+                <div className="writing-tools-panel">
+                  <div
+                    className="actions"
+                    role="group"
+                    aria-label="Writing actions"
                   >
-                    <Icon name={key} />
-                    {actions[key].label}
-                  </Button>
-                ))}
-                <select
-                  aria-label="More writing actions"
-                  disabled={busy}
-                  value={extraActions.includes(action) ? action : ""}
-                  onChange={(event) => setAction(event.target.value as Action)}
-                >
-                  <option value="" disabled>
-                    More
-                  </option>
-                  {extraActions.map((key) => (
-                    <option key={key} value={key}>
-                      {actions[key].label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                    {primaryActions.map((key) => (
+                      <Button
+                        key={key}
+                        className="secondary"
+                        aria-pressed={key === action}
+                        title={actions[key].instruction}
+                        disabled={busy}
+                        onClick={() => setAction(key)}
+                      >
+                        <Icon name={key} />
+                        {actions[key].label}
+                      </Button>
+                    ))}
+                    <select
+                      aria-label="More writing actions"
+                      disabled={busy}
+                      value={extraActions.includes(action) ? action : ""}
+                      onChange={(event) =>
+                        setAction(event.target.value as Action)
+                      }
+                    >
+                      <option value="" disabled>
+                        More
+                      </option>
+                      {extraActions.map((key) => (
+                        <option key={key} value={key}>
+                          {actions[key].label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <details className="writing-preferences">
+                    <summary>Writing preferences · optional</summary>
+                    <label>
+                      Protected terms
+                      <input
+                        value={terms}
+                        maxLength={300}
+                        disabled={busy}
+                        onChange={(event) => setTerms(event.target.value)}
+                        placeholder="PostgreSQL, Acme, API"
+                      />
+                    </label>
+                    <small>
+                      Comma-separated. Missing terms are flagged for review.
+                    </small>
+                    <label>
+                      Custom instruction
+                      <input
+                        value={instruction}
+                        maxLength={300}
+                        disabled={busy}
+                        onChange={(event) => setInstruction(event.target.value)}
+                        placeholder="Be polite but direct."
+                      />
+                    </label>
+                  </details>
+                </div>
+              </details>
             )}
           </div>
-          {chat.mode === "write" && (
-            <details className="writing-preferences">
-              <summary>Writing preferences · optional</summary>
-              <label>
-                Protected terms
-                <input
-                  value={terms}
-                  maxLength={300}
-                  disabled={busy}
-                  onChange={(event) => setTerms(event.target.value)}
-                  placeholder="PostgreSQL, Acme, API"
-                />
-              </label>
-              <small>
-                Comma-separated. Missing terms are flagged for review.
-              </small>
-              <label>
-                Custom instruction
-                <input
-                  value={instruction}
-                  maxLength={300}
-                  disabled={busy}
-                  onChange={(event) => setInstruction(event.target.value)}
-                  placeholder="Be polite but direct."
-                />
-              </label>
-            </details>
-          )}
           {resend !== null && (
             <div className="draft-note">
               Editing a previous request · original conversation will be kept.

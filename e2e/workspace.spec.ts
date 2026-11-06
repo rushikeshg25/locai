@@ -28,6 +28,7 @@ test("loads desktop and mobile without overflow or model download", async ({
     ).toBe(true);
   }
   await page.getByRole("button", { name: "Write", exact: true }).click();
+  await page.getByLabel("Writing tools", { exact: true }).click();
   await page
     .getByText("Writing preferences · optional", { exact: true })
     .click();
