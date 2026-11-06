@@ -12,6 +12,7 @@ test("keyboard shortcuts insert newlines at the caret and send only on Enter", a
   ).toBeAttached();
   const input = page.getByLabel("Your text");
   await expect(input).toHaveAccessibleDescription(/Enter to send/);
+  await expect(page.locator("#composer-shortcuts")).toHaveClass("sr-only");
   await input.fill("FirstSecond");
   await input.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(5, 5));
   await input.press("Control+Enter");

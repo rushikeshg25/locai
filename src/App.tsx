@@ -948,7 +948,7 @@ export default function App({
               >
                 <Icon name="attach" />
               </Button>
-              <span id="composer-shortcuts" className="muted keyboard-hint">
+              <span id="composer-shortcuts" className="sr-only">
                 Enter to send · Ctrl/⌘ + Enter or Shift + Enter for a new line
               </span>
               <div className="run-bar">
