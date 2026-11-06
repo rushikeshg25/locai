@@ -65,6 +65,8 @@ The selected downloaded model loads automatically on startup. Sending before a m
 
 **Downloading and loading are different.** Downloading saves weights in browser storage. Loading prepares those weights in GPU memory. Refreshing the page unloads the running model, so it must load again—even when no weights need downloading. Missing runtime or tokenizer files can still require internet.
 
+Mobile devices show a short availability notice. Use a desktop browser to run Locai; mobile model execution is not supported yet.
+
 ## Chat workspace
 
 - **Chat:** ask questions and continue conversations with context from completed turns.
