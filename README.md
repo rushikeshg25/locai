@@ -132,11 +132,9 @@ Select text in a message and choose **Cite** to append it as a quote to your dra
 
 Drafts are limited to **500 words and 6,000 characters**. The model’s context budget may impose a smaller limit.
 
-### Context indicator
+### Context limits
 
-The ring beside the model name estimates how much conversation input space is used after system instructions and reply space are reserved.
-
-It uses a **conservative byte-based budget**, not measured token usage or GPU memory. Older conversation turns may be excluded to fit. An oversized newest request is rejected rather than silently truncated.
+Input limits use a conservative byte-based budget. Older conversation turns may be excluded to fit. An oversized newest request is rejected rather than silently truncated.
 
 ## Models
 
