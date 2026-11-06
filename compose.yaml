@@ -14,10 +14,3 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-  search:
-    image: searxng/searxng@sha256:ffad724acd87b8dd312328d18da88ddd42e5c4b1d23231594662620053c13cae
-    volumes:
-      - ./docker/searxng/settings.yml:/etc/searxng/settings.yml:ro
-    environment:
-      SEARXNG_SECRET: ${SEARXNG_SECRET:-locai-local-search-not-for-public-hosting}
-    restart: unless-stopped

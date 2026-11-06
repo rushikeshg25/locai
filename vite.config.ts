@@ -44,8 +44,6 @@ export default defineConfig({
       },
     }),
   ],
-  server: { proxy: { "/api/search": "http://127.0.0.1:4174" } },
-  preview: { proxy: { "/api/search": "http://127.0.0.1:4174" } },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/test-setup.ts"],

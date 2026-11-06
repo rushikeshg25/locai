@@ -50,11 +50,7 @@ test("panels, tooltips and composer fit small, landscape and desktop viewports",
       expect(tip!.x + tip!.width).toBeLessThanOrEqual(width);
       await page.keyboard.press("Escape");
       if (width <= 600) {
-        for (const name of [
-          "Attach text files",
-          "Search the web",
-          "Send message",
-        ]) {
+        for (const name of ["Attach text files", "Send message"]) {
           const box = await page
             .getByRole("button", { name, exact: true })
             .boundingBox();

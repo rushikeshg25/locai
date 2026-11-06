@@ -4,16 +4,15 @@ AI chat that runs in your browser, on your device.
 
 Ask questions, explore ideas, and improve your writing with local language models. No account, API key, or inference server required.
 
-Locai uses **WebGPU** through **WebLLM** to run models locally. Optional web search uses **SearXNG** to bring source snippets into the conversation.
+Locai uses **WebGPU** through **WebLLM** to run models locally. It does not browse the web or search for live information.
 
 ## Features
 
 - **One chat interface** for questions, writing, brainstorming, and explanations.
 - **Local inference** with downloadable models.
 - **Automatic model loading** when the selected model is already downloaded.
-- **Saved conversations** with generated titles, search, rename, pin, and delete.
+- **Saved conversations** with generated titles, conversation search, rename, pin, and delete.
 - **A fresh chat on startup**, with previous conversations available in the sidebar.
-- **Web search** with source links and numbered citations.
 - **Reasoning support** for Qwen 3, with thinking separated from the final answer.
 - **Text and Markdown attachments** for reference material.
 - **Select-to-cite** to quote part of a message in your next request.
@@ -46,7 +45,7 @@ docker compose up --build -d --wait
 
 Open **http://localhost:4174**.
 
-Docker Compose starts the app and its SearXNG search service. Docker does not need GPU access: inference runs in your browser.
+Docker Compose starts the app. Docker does not need GPU access: inference runs in your browser.
 
 To use another port:
 
@@ -80,7 +79,7 @@ npm run build
 npm run preview -- --host 127.0.0.1 --port 4175
 ```
 
-The app works without Docker, but web search needs a search backend. The Vite configuration forwards `/api/search` to the Docker gateway at `http://127.0.0.1:4174`.
+The Node.js setup does not require Docker.
 
 The service worker is enabled in production builds, not during development.
 
@@ -151,7 +150,7 @@ Input limits use a conservative byte-based budget. Older conversation turns may 
 
 Qwen 2.5 0.5B is the default. These estimates exclude some runtime and browser overhead and do not guarantee device compatibility.
 
-Model definitions are maintained in [`src/models.ts`](src/models.ts).
+Model definitions are maintained in [`src/features/models/models.ts`](src/features/models/models.ts).
 
 ### Reasoning
 
@@ -161,22 +160,17 @@ Thinking appears in a separate, collapsed section. Only the final answer is reus
 
 Reasoning uses more of the available context and can take longer. A model may reach its output limit or timeout before producing a final answer.
 
-## Web search
+## Web access
 
-Enable **Web** before sending a message.
+Locai does not fetch web pages or search results. Pasting a URL does not let the model read that page, and answers are not checked against live information.
 
-Locai sends the current question to SearXNG and gives the local model up to four search-result snippets. Responses can cite these sources, and the source list shows the results used.
+To use outside information, paste the relevant text or attach a text/Markdown file, then ask a question about it. For example:
 
-- No search API key or paid subscription is required.
-- Web search is off by default.
-- Only the current question, limited to 300 characters, is sent.
-- Earlier messages and attachment contents are not included in the search query.
-- Search requires internet and a configured search service.
-- Search failures are shown explicitly.
+> Using the notes below, summarize the main points and identify anything uncertain.
 
-This is snippet-based search, not full-page browsing or an autonomous research agent. Check the linked sources: small models can misinterpret results or omit citations.
+Older saved conversations keep their source links and exports. Retrying an old search response now runs local inference without repeating the search.
 
-The bundled SearXNG setup is intended for local use. Before public deployment, configure a private `SEARXNG_SECRET`, appropriate access controls, and an HTTPS reverse proxy.
+The Docker setup serves only the app; it no longer starts SearXNG or exposes a search proxy.
 
 ## Privacy and storage
 
@@ -185,7 +179,6 @@ Messages and attachments are processed locally for model inference.
 Network access is used for:
 
 - Model and runtime downloads.
-- Optional web-search queries.
 - Source links you choose to open.
 
 Generated HTML is disabled, and model-generated remote images are not fetched automatically.
@@ -218,16 +211,15 @@ IME composition does not submit a message. Controls have accessible labels and v
 
 ## Troubleshooting
 
-| Issue                           | What to try                                                                                              |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| WebGPU unavailable              | Enable hardware acceleration and use a supported desktop browser over HTTPS or localhost.                |
-| Model loads after every refresh | Expected: cached weights must be prepared in GPU memory again.                                           |
-| Model downloads again           | Check the browser profile, hostname, port, cleared site data, or cache eviction.                         |
-| Download appears stuck          | Check the model’s progress ring. Stop and select the model again to retry.                               |
-| Large model fails to load       | Try a smaller model and close other GPU-heavy applications or tabs.                                      |
-| Web search fails                | Check that SearXNG is running and reachable. Search engines may rate-limit requests or require CAPTCHAs. |
-| Old interface appears           | Allow the service worker to update, then reload. Avoid clearing all site data first.                     |
-| Chat is missing                 | Check the same browser profile and origin, and whether the chat was temporary.                           |
+| Issue                           | What to try                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------------- |
+| WebGPU unavailable              | Enable hardware acceleration and use a supported desktop browser over HTTPS or localhost. |
+| Model loads after every refresh | Expected: cached weights must be prepared in GPU memory again.                            |
+| Model downloads again           | Check the browser profile, hostname, port, cleared site data, or cache eviction.          |
+| Download appears stuck          | Check the model’s progress ring. Stop and select the model again to retry.                |
+| Large model fails to load       | Try a smaller model and close other GPU-heavy applications or tabs.                       |
+| Old interface appears           | Allow the service worker to update, then reload. Avoid clearing all site data first.      |
+| Chat is missing                 | Check the same browser profile and origin, and whether the chat was temporary.            |
 
 Model loading times out after ten minutes. Generation times out after two minutes.
 
@@ -261,21 +253,20 @@ See [`docs/evaluation.md`](docs/evaluation.md) for model-output evaluation.
 
 ### Project structure
 
-| Area                      | Files                                                             |
-| ------------------------- | ----------------------------------------------------------------- |
-| Chat workspace            | `src/App.tsx`, `src/ConversationSidebar.tsx`                      |
-| Model selection           | `src/ModelPicker.tsx`, `src/models.ts`                            |
-| Inference and lifecycle   | `src/inference.ts`, `src/inference.worker.ts`, `src/useWriter.ts` |
-| Persona and context       | `src/persona.ts`, `src/prompts.ts`                                |
-| Conversations and storage | `src/conversations.ts`, `src/storage.ts`                          |
-| Search                    | `src/search.ts`, `docker/searxng/settings.yml`                    |
-| Mobile notice             | `src/MobileNotice.tsx`                                            |
-| Offline app caching       | `src/offline.ts`, `vite.config.ts`                                |
-| Tests                     | `src/*.test.*`, `e2e/`                                            |
+| Area                      | Files                                                                                                             |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Chat workspace            | `src/app/App.tsx`, `src/features/chat/ConversationSidebar.tsx`                                                    |
+| Model selection           | `src/features/models/ModelPicker.tsx`, `src/features/models/models.ts`                                            |
+| Inference and lifecycle   | `src/features/models/inference.ts`, `src/features/models/inference.worker.ts`, `src/features/models/useWriter.ts` |
+| Persona and context       | `src/features/prompts/persona.ts`, `src/features/prompts/prompts.ts`                                              |
+| Conversations and storage | `src/features/chat/conversations.ts`, `src/features/chat/storage.ts`                                              |
+| Mobile notice             | `src/platform/MobileNotice.tsx`                                                                                   |
+| Offline app caching       | `src/platform/offline.ts`, `vite.config.ts`                                                                       |
+| Tests                     | `src/**/*.test.*`, `e2e/`                                                                                         |
 
 ## Limitations
 
-Locai does not currently support mobile model execution, voice input, account sync, executable artifacts, or full-page browsing.
+Locai does not currently support mobile model execution, voice input, account sync, executable artifacts, live web search, or full-page browsing.
 
 Local models can make mistakes. Review important facts, names, numbers, and generated code before using them.
 

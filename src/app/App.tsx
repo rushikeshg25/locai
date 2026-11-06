@@ -1,6 +1,5 @@
 import { SelectionCitation } from "../features/chat/SelectionCitation";
 import { useDismissibleDetails } from "../shared/hooks/useDismissibleDetails";
-import { searchWeb, fitSearch } from "../features/search/search";
 import type { WritingRequest } from "../features/prompts/prompts";
 import { ConversationSidebar } from "../features/chat/ConversationSidebar";
 import { BrowserWelcome } from "../features/chat/BrowserWelcome";
@@ -60,13 +59,9 @@ export default function App({
   const writer = browserWriter;
   const autoAttempted = useRef(false);
   const session = useWriter(writer);
-  const [webSearch, setWebSearch] = useState(false);
   const [reasoningEnabled, setReasoningEnabled] = useState(
     () => getPreference("reasoning", "true") === "true",
   );
-  const [searching, setSearching] = useState<string | null>(null);
-  const searchController = useRef<AbortController | null>(null);
-  useEffect(() => () => searchController.current?.abort(), []);
   const [modelRequired, setModelRequired] = useState(false);
   useEffect(() => {
     if (session.status === "ready") setModelRequired(false);
@@ -172,9 +167,9 @@ export default function App({
   const nearBottom = useRef(true);
   const [latest, setLatest] = useState(false);
   const info = useRef<HTMLDialogElement>(null);
-  const busy =
-    !!searching ||
-    ["loading", "writing", "stopping", "removing"].includes(session.status);
+  const busy = ["loading", "writing", "stopping", "removing"].includes(
+    session.status,
+  );
   const selected = models.find((item) => item.id === model)!;
   useEffect(() => {
     if (autoAttempted.current || supported !== true) return;
@@ -308,10 +303,9 @@ export default function App({
     requestAction = action,
     requestTerms = "",
     requestInstruction = "",
-    useSearch = webSearch && requestMode === "chat",
     useReasoning = reasoningEnabled,
   ) {
-    if (busy || searchController.current) return;
+    if (busy) return;
     if (session.status !== "ready") {
       setModelRequired(true);
       const picker = composer.current
@@ -350,7 +344,6 @@ export default function App({
     const user: Message = {
       id: crypto.randomUUID(),
       role: "user",
-      webSearch: useSearch,
       reasoningEnabled: reasoning,
       content: source,
       attachments: attached,
@@ -362,7 +355,6 @@ export default function App({
     const answer: Message = {
       id: crypto.randomUUID(),
       role: "assistant",
-      webSearch: useSearch,
       reasoningEnabled: reasoning,
       content: "",
       state: "streaming",
@@ -401,37 +393,6 @@ export default function App({
     setFeedback("");
     nearBottom.current = true;
     setLatest(false);
-    if (useSearch) {
-      const controller = new AbortController();
-      searchController.current = controller;
-      setSearching(answer.id);
-      patch(id, answer.id, { searchQuery: source.trim().slice(0, 300) });
-      try {
-        const sources = await searchWeb(source, controller.signal);
-        if (controller.signal.aborted) throw new Error("Search cancelled.");
-        const fitted = fitSearch(request, sources);
-        request = fitted.request;
-        patch(id, answer.id, {
-          webSources: request.webSources,
-          omitted: fitted.budget.omitted,
-        });
-      } catch (cause) {
-        patch(id, answer.id, {
-          state: controller.signal.aborted ? "stopped" : "error",
-          searchError: controller.signal.aborted
-            ? "Search cancelled."
-            : cause instanceof Error
-              ? cause.message
-              : "Search failed. Please retry.",
-        });
-        return;
-      } finally {
-        if (searchController.current === controller) {
-          searchController.current = null;
-          setSearching(null);
-        }
-      }
-    }
     const parse = (content: string) =>
       supportsReasoning(selected.id) ? splitReasoning(content) : { content };
     const result = await session.run(
@@ -688,18 +649,13 @@ export default function App({
                         <span />
                       </span>
                       <span>
-                        {searching === message.id
-                          ? "Searching the web…"
-                          : message.content
-                            ? "Responding…"
-                            : "Thinking…"}
+                        {message.content ? "Responding…" : "Thinking…"}
                       </span>
                     </div>
                   )}
                   {message.searchQuery && (
                     <small className="search-query">
-                      {searching === message.id ? "Searching" : "Searched"}:{" "}
-                      {message.searchQuery}
+                      Searched: {message.searchQuery}
                     </small>
                   )}
                   {message.searchError && (
@@ -790,7 +746,6 @@ export default function App({
                               user.action ?? "grammar",
                               user.terms ?? "",
                               user.instruction ?? "",
-                              user.webSearch ?? false,
                               user.reasoningEnabled ?? false,
                             );
                         }}
@@ -1005,17 +960,6 @@ export default function App({
               >
                 <Icon name="attach" />
               </Button>
-              <Button
-                className="secondary web-search-toggle"
-                aria-label="Search the web"
-                aria-pressed={webSearch}
-                title="Search the web · sends this question to search engines"
-                disabled={busy}
-                onClick={() => setWebSearch(!webSearch)}
-              >
-                <Icon name="search" />
-                Web
-              </Button>
               <span id="composer-shortcuts" className="sr-only">
                 Enter to send · Ctrl/⌘ + Enter or Shift + Enter for a new line
               </span>
@@ -1023,7 +967,7 @@ export default function App({
                 <ModelPicker
                   writer={writer}
                   model={model}
-                  status={searching ? "searching" : session.status}
+                  status={session.status}
                   progress={session.progress}
                   required={modelRequired}
                   supported={supported}
@@ -1053,11 +997,7 @@ export default function App({
                       session.status === "removing" ||
                       session.status === "stopping"
                     }
-                    onClick={() =>
-                      searchController.current
-                        ? searchController.current.abort()
-                        : session.stop()
-                    }
+                    onClick={() => session.stop()}
                   >
                     <Icon name="stop" />
                   </Button>
@@ -1106,10 +1046,9 @@ export default function App({
           </p>
           <p>
             Model downloads contact Hugging Face and the runtime host. Messages
-            and attachments are processed in this browser. Optional web search
-            sends the current question to search engines through the search
-            service. No account is required. Review AI answers before using
-            them.
+            and attachments are processed in this browser. Live web search is
+            not available. No account is required. Review AI answers before
+            using them.
           </p>
           <p>
             Downloaded models load automatically when you open Locai. Weights
