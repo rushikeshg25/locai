@@ -1,6 +1,8 @@
-# Local Writer
+# Locai
 
-Chat with a language model, work through ideas, and revise drafts—all in your browser. Local Writer runs models on your device through WebGPU, with no account, API key, or model server.
+Chat with a language model, work through ideas, and revise drafts—all in your browser. Locai runs models on your device through WebGPU, with no account, API key, or model server.
+
+Previously named Local Writer. Existing browser storage keys retain the old prefix so saved chats and preferences continue to work on the same origin.
 
 The app is a static React application. Your browser downloads the model files and performs inference; the web server only serves the app.
 
@@ -9,6 +11,13 @@ The app is a static React application. Your browser downloads the model files an
 You need a browser with WebGPU support and hardware acceleration enabled. Open the app over **localhost or HTTPS**. Available GPU memory determines which models your device can run.
 
 ### Run with Docker
+
+Clone the repository, then open its directory:
+
+```sh
+git clone https://github.com/rushikeshg25/locai.git
+cd locai
+```
 
 From the repository root:
 

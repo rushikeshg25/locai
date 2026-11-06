@@ -8,8 +8,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       injectRegister: false,
       manifest: {
-        name: "Local Writer",
-        short_name: "Local Writer",
+        name: "Locai",
+        short_name: "Locai",
         description: "Private on-device writing assistant",
         theme_color: "#fafafa",
         background_color: "#fafafa",

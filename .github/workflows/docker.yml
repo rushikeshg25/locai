@@ -11,7 +11,7 @@ jobs:
         run: docker compose up --build --wait --wait-timeout 120
       - name: Check app and service worker
         run: |
-          curl --fail --silent http://localhost:4174/ | grep -q '<title>Local Writer</title>'
+          curl --fail --silent http://localhost:4174/ | grep -q '<title>Locai</title>'
           curl --fail --silent --output /dev/null http://localhost:4174/sw.js
       - name: Container logs
         if: failure()

@@ -14,9 +14,7 @@ test("loads desktop and mobile without overflow or model download", async ({
   });
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await expect(
-    page.getByRole("heading", { name: "Local Writer" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Locai" })).toBeVisible();
   await page
     .getByLabel("Your text")
     .fill("Private draft. We might ship Friday.");
@@ -69,9 +67,7 @@ test("reloads the cached app offline without retaining drafts", async ({
     .toBe(true);
   await context.setOffline(true);
   await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Local Writer" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Locai" })).toBeVisible();
   await page.getByLabel("Your text").fill("Offline draft");
   await expect(page.getByLabel("Your text")).toHaveValue("Offline draft");
 });
@@ -85,7 +81,7 @@ test("model picker keeps selections open and dismisses outside or with Escape", 
   await trigger.click();
   await page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }).check();
   await expect(picker).toHaveAttribute("open", "");
-  await page.getByRole("heading", { name: "Local Writer" }).click();
+  await page.getByRole("heading", { name: "Locai" }).click();
   await expect(picker).not.toHaveAttribute("open");
   await trigger.click();
   await page.keyboard.press("Escape");

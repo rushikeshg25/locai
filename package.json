@@ -1,7 +1,7 @@
 {
-  "name": "local-writer",
+  "name": "locai",
   "version": "1.0.0",
-  "description": "Private browser writing assistant",
+  "description": "On-device AI chat and writing workspace",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

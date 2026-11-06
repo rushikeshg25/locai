@@ -1,10 +1,10 @@
 services:
-  local-writer:
+  locai:
     build:
       context: .
       args:
         VITE_RUNTIME_BASE_URL: ${VITE_RUNTIME_BASE_URL:-}
-    image: local-writer:local
+    image: locai:local
     ports:
       - "127.0.0.1:${PORT:-4174}:8080"
     read_only: true

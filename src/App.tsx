@@ -419,7 +419,7 @@ export default function App({
             >
               <Icon name="sidebar" />
             </Button>
-            <h1>Local Writer</h1>
+            <h1>Locai</h1>
           </div>
           <div className="header-tools">
             <Button
@@ -432,8 +432,8 @@ export default function App({
             </Button>
             <Button
               className="icon-button secondary"
-              aria-label="About Local Writer"
-              title="About Local Writer"
+              aria-label="About Locai"
+              title="About Locai"
               onClick={() => info.current?.showModal()}
             >
               <Icon name="info" />
@@ -489,7 +489,7 @@ export default function App({
                       );
                       const link = document.createElement("a");
                       link.href = url;
-                      link.download = "local-writer-chat.md";
+                      link.download = "locai-chat.md";
                       link.click();
                       setTimeout(() => URL.revokeObjectURL(url), 1000);
                     }}
@@ -1103,7 +1103,7 @@ export default function App({
             if (event.target === info.current) info.current?.close();
           }}
         >
-          <h2 id="info-title">About Local Writer</h2>
+          <h2 id="info-title">About Locai</h2>
           <p>
             Browser models run on this device. Chats are temporary unless you
             choose Save on device. Saved chats and attachments remain in this
