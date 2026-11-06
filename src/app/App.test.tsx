@@ -8,10 +8,10 @@ import {
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import App from "./App";
-import { newConversation } from "./conversations";
-import { saveChat } from "./storage";
-import type { Writer } from "./inference";
-vi.mock("./inference", () => ({ LocalWriter: class {} }));
+import { newConversation } from "../features/chat/conversations";
+import { saveChat } from "../features/chat/storage";
+import type { Writer } from "../features/models/inference";
+vi.mock("../features/models/inference", () => ({ LocalWriter: class {} }));
 afterEach(() => {
   cleanup();
   localStorage.clear();

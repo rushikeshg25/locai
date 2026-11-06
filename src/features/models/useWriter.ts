@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Writer } from "./inference";
-import type { WritingRequest } from "./prompts";
+import type { WritingRequest } from "../prompts/prompts";
 export function useWriter(writer: Writer) {
   const [status, setStatus] = useState<
     "idle" | "loading" | "ready" | "writing" | "stopping" | "removing"

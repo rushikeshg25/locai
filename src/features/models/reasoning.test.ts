@@ -1,8 +1,8 @@
 import { afterEach, expect, it } from "vitest";
 import { splitReasoning } from "./reasoning";
-import { conversationHistory, newConversation } from "./conversations";
-import { saveChat, readSaved, exportMarkdown } from "./storage";
-import { prepareMessages, outputTokenLimit } from "./prompts";
+import { conversationHistory, newConversation } from "../chat/conversations";
+import { saveChat, readSaved, exportMarkdown } from "../chat/storage";
+import { prepareMessages, outputTokenLimit } from "../prompts/prompts";
 afterEach(() => localStorage.clear());
 it("holds partial tags and separates streamed reasoning from the answer", () => {
   const raw = "<think>Work through it.</think>Final answer.";
@@ -82,7 +82,7 @@ it("rejects malformed saved reasoning metadata", () => {
 });
 
 it("keeps native reasoning enabled when search results are fitted to its smaller input budget", async () => {
-  const { fitSearch } = await import("./search");
+  const { fitSearch } = await import("../search/search");
   const request = {
     text: "Explain this fact",
     mode: "chat" as const,

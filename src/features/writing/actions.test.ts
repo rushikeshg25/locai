@@ -5,7 +5,7 @@ import {
   buildMessages,
   missingTerms,
   protectedTerms,
-} from "./prompts";
+} from "../prompts/prompts";
 describe("writing contracts", () => {
   it("rejects empty or oversized input without silently truncating", () => {
     expect(inputError("  \n")).toMatch(/first/);

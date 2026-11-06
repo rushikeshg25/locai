@@ -1,4 +1,4 @@
-import { useTheme } from "./useTheme";
+import { useTheme } from "../shared/hooks/useTheme";
 
 export function isMobileDevice() {
   return (

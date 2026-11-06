@@ -1,10 +1,10 @@
-import { useDismissibleDetails } from "./useDismissibleDetails";
+import { useDismissibleDetails } from "../../shared/hooks/useDismissibleDetails";
 import { LoadingStatus } from "./LoadingStatus";
-import { Button } from "./Button";
+import { Button } from "../../shared/ui/Button";
 import { useEffect, useRef, useState } from "react";
 import { models, modelsBySize, supportsReasoning } from "./models";
 import type { Writer } from "./inference";
-import { Icon } from "./Icon";
+import { Icon } from "../../shared/ui/Icon";
 export function ModelPicker({
   writer,
   model,
