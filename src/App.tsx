@@ -38,7 +38,11 @@ import {
   readAttachments,
 } from "./storage";
 import { getPreference, setPreference, preferredModel } from "./preferences";
-import { prepareMessages, missingTerms } from "./prompts";
+import {
+  prepareMessages,
+  missingTerms,
+  conversationBudgetUsage,
+} from "./prompts";
 export default function App({
   writer: supplied,
   gpuCheck = checkGPU,
@@ -388,7 +392,10 @@ export default function App({
     } else
       update(id, (item) => ({
         ...item,
-        title: item.messages.length ? item.title : source.slice(0, 44),
+        title:
+          item.messages.length || item.title !== "New chat"
+            ? item.title
+            : source.slice(0, 44),
         messages: [...prefix, user, answer],
       }));
     setText("");
@@ -433,7 +440,7 @@ export default function App({
     const result = await session.run(
       request,
       (content) => patch(id, answer.id, parse(content)),
-      !fork && chat.messages.length === 0
+      !fork && chat.messages.length === 0 && chat.title === "New chat"
         ? {
             firstMessage: source,
             onTitle: (title) => update(id, (item) => ({ ...item, title })),
@@ -447,9 +454,9 @@ export default function App({
     });
   }
   let contextUsage = 0;
-  if (text.trim() || chat.messages.length) {
+  if (text.trim() || chat.messages.length || attachments.length) {
     try {
-      const budget = prepareMessages({
+      contextUsage = conversationBudgetUsage({
         reasoning: reasoningEnabled && supportsReasoning(selected.id),
         text: messageText({ content: text, attachments }),
         mode: "chat",
@@ -459,7 +466,6 @@ export default function App({
         history: conversationHistory(resend ?? chat.messages),
         contextWindow: 4096,
       });
-      contextUsage = budget.used / budget.budget;
     } catch {
       // Sending still reports the full budget error; show a full ring meanwhile.
       contextUsage = 1;

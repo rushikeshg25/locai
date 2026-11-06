@@ -111,3 +111,20 @@ it("preserves sources when saving and exporting a chat", () => {
   expect(readSaved().chats[0].messages[0].webSources).toEqual([source]);
   expect(exportMarkdown(chat)).toContain(source.url);
 });
+it("rejects oversized streamed search JSON before parsing it", async () => {
+  const cancel = vi.fn();
+  const response = new Response(
+    new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array(300_000));
+      },
+      cancel,
+    }),
+    { headers: { "Content-Type": "application/json" } },
+  );
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+  await expect(searchWeb("test", new AbortController().signal)).rejects.toThrow(
+    "Search response is too large",
+  );
+  expect(cancel).toHaveBeenCalled();
+});

@@ -560,3 +560,17 @@ it("opens a fresh chat without overwriting or duplicating saved conversations", 
     cleanup();
   }
 });
+it("keeps a manually named empty chat when its first message is sent", async () => {
+  setup();
+  fireEvent.click(screen.getByRole("button", { name: "Options for New chat" }));
+  fireEvent.click(screen.getByRole("button", { name: "Rename", exact: true }));
+  fireEvent.change(screen.getByLabelText("Chat title"), {
+    target: { value: "My project" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Save title" }));
+  await ready();
+  await send("A different first message");
+  expect(
+    screen.getByRole("button", { name: "Open chat: My project" }),
+  ).toBeInTheDocument();
+});

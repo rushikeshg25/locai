@@ -76,7 +76,7 @@ export function ModelPicker({
       >
         <LoadingStatus
           progress={{ value: contextUsage, message: "" }}
-          label="Estimated context usage"
+          label="Conversation budget estimate"
           indeterminate={false}
         />
         <span className="model-name">

@@ -98,7 +98,7 @@ Put writing instructions and text together in the message box, for example: “M
 | Attachments              | Up to 3 UTF-8 `.txt`, `.md`, or `.markdown` files |
 | Combined attachment size | 24,000 bytes                                      |
 
-The model context budget can impose a smaller limit. Older turns may be excluded to fit; an oversized newest request is rejected rather than silently truncated. The ring beside the model name shows conservative context usage, not an exact token count.
+The model context budget can impose a smaller limit. Older turns may be excluded to fit; an oversized newest request is rejected rather than silently truncated. The ring beside the model name estimates conversation use of the remaining input budget after system instructions and reply space are reserved. It uses conservative UTF-8 bytes, not measured tokens or GPU memory.
 
 ## Reasoning
 

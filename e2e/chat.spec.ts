@@ -206,7 +206,7 @@ test("model loading uses a row progress ring without moving the composer", async
     await expect(
       page
         .locator(".model-settings summary")
-        .getByRole("progressbar", { name: "Estimated context usage" }),
+        .getByRole("progressbar", { name: "Conversation budget estimate" }),
     ).toBeVisible();
     await expect(
       page.getByText("Loaded in memory", { exact: true }),
