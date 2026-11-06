@@ -133,20 +133,7 @@ export function ModelPicker({
                 onChange={() => onSelect(item.id)}
               />
               <span>
-                <strong>
-                  <span className="model-size" aria-hidden="true">
-                    {"🧊".repeat(
-                      item.downloadMB <= 350
-                        ? 1
-                        : item.downloadMB <= 900
-                          ? 2
-                          : item.downloadMB <= 1900
-                            ? 3
-                            : 4,
-                    )}
-                  </span>
-                  {item.label}
-                </strong>
+                <strong>{item.label}</strong>
                 <small>
                   {item.download} · {item.memory}
                 </small>

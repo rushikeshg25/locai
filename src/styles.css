@@ -1474,14 +1474,6 @@ input[type="radio"] {
   margin-left: 24px;
 }
 
-.model-size {
-  display: inline-block;
-  margin-right: 6px;
-  font-size: 10px;
-  vertical-align: 1px;
-  white-space: nowrap;
-}
-
 .selection-cite {
   position: fixed;
   z-index: 100;
