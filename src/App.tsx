@@ -554,7 +554,7 @@ export default function App({
                 ) : message.role === "user" ? (
                   <p className="user-text">{message.content}</p>
                 ) : (
-                  <Markdown text={message.content} />
+                  message.content && <Markdown text={message.content} />
                 )}
                 {message.attachments?.map((file, index) => (
                   <details className="attachment-preview" key={index}>
@@ -563,9 +563,18 @@ export default function App({
                   </details>
                 ))}
                 {message.state === "streaming" && (
-                  <small role="status">
-                    {message.content ? "Responding…" : "Thinking…"}
-                  </small>
+                  <div
+                    className="reply-progress"
+                    role="status"
+                    aria-atomic="true"
+                  >
+                    <span className="reply-dots" aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                    <span>{message.content ? "Responding…" : "Thinking…"}</span>
+                  </div>
                 )}
                 {message.state === "stopped" && (
                   <small>Stopped · incomplete response</small>

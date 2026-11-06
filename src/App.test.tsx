@@ -353,3 +353,32 @@ it.each(["new chat", "send", "newer file"])(
       expect(screen.getByLabelText("Remove new.txt")).toBeInTheDocument();
   },
 );
+
+it("shows reply progress until generation completes", async () => {
+  const writer = setup();
+  let finish!: () => void;
+  let emit!: (text: string) => void;
+  vi.mocked(writer.generate).mockImplementation(async (_request, chunk) => {
+    emit = chunk;
+    await new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    return { truncated: false };
+  });
+  await ready();
+  fireEvent.change(screen.getByLabelText("Your text"), {
+    target: { value: "Hello" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+  expect(await screen.findByText("Thinking…")).toBeVisible();
+  expect(
+    screen.getByText("Thinking…").closest('[role="status"]'),
+  ).toHaveAttribute("aria-atomic", "true");
+  act(() => emit("Hello there"));
+  expect(await screen.findByText("Responding…")).toBeVisible();
+  expect(screen.getByText("Hello there")).toBeVisible();
+  await act(async () => finish());
+  await waitFor(() =>
+    expect(screen.queryByText("Responding…")).not.toBeInTheDocument(),
+  );
+});
