@@ -10,7 +10,9 @@ export function BrowserWelcome({
     <div className="empty">
       <h2>What can I help with?</h2>
       {!ready && (
-        <p className="welcome-hint">Choose a model below to start chatting.</p>
+        <p className="welcome-hint">
+          Select a model from the message box to start chatting.
+        </p>
       )}
       <div className="starter-prompts" aria-label="Conversation starters">
         {[
