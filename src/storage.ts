@@ -57,6 +57,7 @@ export function readSaved(): { chats: Conversation[]; warning: string } {
           key !== PREFIX + value.id ||
           typeof value.id !== "string" ||
           typeof value.title !== "string" ||
+          (value.pinned !== undefined && typeof value.pinned !== "boolean") ||
           !Number.isFinite(value.updatedAt) ||
           new Set(value.messages?.map((message: Message) => message?.id))
             .size !== value.messages?.length ||

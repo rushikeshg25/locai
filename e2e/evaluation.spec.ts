@@ -22,7 +22,8 @@ test("collect real browser-model outputs for human quality review", async ({
     "Opt-in real-model evaluation; downloads weights and needs WebGPU.",
   );
   test.setTimeout(30 * 60 * 1000);
-  const size = process.env.EVAL_MODEL === "large" ? "Larger" : "Small";
+  const size =
+    process.env.EVAL_MODEL === "large" ? "Qwen 2.5 1.5B" : "Qwen 2.5 0.5B";
   const results: unknown[] = [];
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
@@ -36,17 +37,9 @@ test("collect real browser-model outputs for human quality review", async ({
   try {
     for (const sample of cases) {
       await page.getByRole("button", { name: "New chat" }).click();
-      await page.getByRole("button", { name: "Write", exact: true }).click();
-      await page.getByLabel("Writing tools", { exact: true }).click();
-      if (labels[sample.action])
-        await page
-          .getByRole("button", { name: labels[sample.action], exact: true })
-          .click();
-      else
-        await page
-          .getByLabel("More writing actions")
-          .selectOption(sample.action);
-      await page.getByLabel("Your text").fill(sample.text);
+      await page
+        .getByLabel("Your text")
+        .fill(`${labels[sample.action] ?? sample.action}:\n\n${sample.text}`);
       const begin = Date.now();
       await page.getByRole("button", { name: "Send message" }).click();
       await expect(page.locator(".assistant .markdown")).not.toBeEmpty({

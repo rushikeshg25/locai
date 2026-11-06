@@ -68,8 +68,8 @@ Downloaded models load automatically on startup by default. You can disable **Au
 ## Chat workspace
 
 - **Chat:** ask questions and continue conversations with context from completed turns.
-- **Write:** fix grammar, adjust tone, shorten, summarize, format, simplify, expand, or make text more direct or warmer. Compare the original and revised wording.
-- **Chat history:** the loaded model creates a short title from your first message after the first reply. Titles save with the conversation; if generation fails, the message excerpt remains. Search conversation titles and message text. Collapse the desktop sidebar into an icon rail for Expand, New chat, and Search. Mobile uses a drawer.
+- **Writing:** ask directly in chat to fix grammar, change tone, summarize, or rewrite text. No mode switch is needed.
+- **Chat history:** the loaded model creates a short title from your first message after the first reply. Titles save with the conversation; if generation fails, the message excerpt remains. Search conversation titles and message text. Hover or focus a chat to rename, pin/unpin, or delete it; these controls remain visible on touch devices. Pinned chats appear first, and titles and pins save automatically. Collapse the desktop sidebar into an icon rail for Expand, New chat, and Search. Mobile uses a drawer.
 - **Reply actions:** copy, cite selected text, reuse as input, or branch from a reply. Retry and edit/resend create a new branch while keeping the original conversation.
 - **Attachments:** add plain-text or Markdown reference files. Their contents are included as text, not executed.
 - **Display:** light and dark themes, Markdown replies, tables, code blocks with Copy, and streamed responses. Scrolling up pauses automatic following; **Jump to latest** returns to the reply.
@@ -90,7 +90,7 @@ IME composition does not submit a message. Icon controls have accessible labels;
 
 ### Writing controls and limits
 
-In Write mode, open the writing-tools dropdown beside Chat/Write to choose an action. The panel overlays the conversation without moving the composer. For custom requests, paste your text and instructions together in Chat. Select text within a message and click **Cite** to append it as a Markdown quote to your current draft. The draft and mode are preserved. After selecting text, Tab focuses Cite; Enter inserts the quote, and Escape dismisses the action.
+Put writing instructions and text together in the message box, for example: “Make this more professional: ...”. Select message text and click **Cite** to append it as a quote to your draft. After selecting text, Tab focuses Cite; Enter inserts the quote, and Escape dismisses the action. Saved legacy writing requests retain their original retry settings.
 
 | Input                    | Limit                                             |
 | ------------------------ | ------------------------------------------------- |
@@ -98,11 +98,11 @@ In Write mode, open the writing-tools dropdown beside Chat/Write to choose an ac
 | Attachments              | Up to 3 UTF-8 `.txt`, `.md`, or `.markdown` files |
 | Combined attachment size | 24,000 bytes                                      |
 
-The model context budget can impose a smaller limit. Older turns may be excluded to fit; an oversized newest request is rejected rather than silently truncated. The **Context budget** info control beside Chat/Write shows a conservative byte-based estimate, not an exact token count.
+The model context budget can impose a smaller limit. Older turns may be excluded to fit; an oversized newest request is rejected rather than silently truncated. The ring beside the model name shows conservative context usage, not an exact token count.
 
 ## Reasoning
 
-Select **Reasoning · Qwen 3 0.6B** in Models and download/load it. Its **Reasoning** checkbox controls native thinking for Chat mode and is enabled by default. Existing models keep their current behavior. Write mode always disables thinking.
+Select **Qwen 3 0.6B** in Models and download/load it. Its **Reasoning** checkbox controls native thinking for messages and is enabled by default. Existing models keep their current behavior. Legacy writing retries still disable thinking.
 
 While the model works, a collapsed **Thinking** section holds its intermediate text. The final answer appears separately. Thinking is model-generated text, not a verified explanation or a guarantee of correctness. Reasoning can take longer, and a small model can still make mistakes.
 
@@ -253,3 +253,9 @@ ICON_BROWSER_CHANNEL=chrome node scripts/generate-icons.mjs
 | Unit/component and browser tests      | `src/*.test.*`, `e2e/`                                              |
 
 The app currently has no full-page browsing, voice, executable artifacts, or account sync. Model assets remain on their respective hosts and carry their own terms; this repository is marked `UNLICENSED` in `package.json`.
+
+### Locai persona
+
+The default chat prompt in `src/persona.ts` gives Locai a concise, friendly voice, follows the user's language and requested format, and supports writing tasks directly. It asks for clarification only when needed, preserves facts in edits, admits uncertainty, and treats quoted or attached material as reference data. Web citations are enabled only when search snippets are supplied. It does not claim browser, terminal, or device-control tools.
+
+Design references: [Codex's public base instructions](https://github.com/openai/codex/blob/main/codex-rs/protocol/src/prompts/base_instructions/default.md) for tone and capability boundaries; [Open WebUI's prompt guidance](https://docs.openwebui.com/getting-started/essentials/) for stable system context; [llama.cpp chat templates](https://github.com/ggml-org/llama.cpp/blob/master/common/chat.cpp) for keeping model-specific formatting in the runtime. This is a short, original prompt adapted to Locai's small local models, not a copied coding-agent prompt.

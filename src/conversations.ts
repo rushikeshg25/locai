@@ -35,6 +35,7 @@ export interface Conversation {
   messages: Message[];
   updatedAt: number;
   saved: boolean;
+  pinned?: boolean;
 }
 export function newConversation(mode: Mode = "chat"): Conversation {
   return {

@@ -85,19 +85,20 @@ it("starts an empty chat without unloading the model", async () => {
     expect.any(Function),
   );
 });
-it("writes and reviews every action without including chat history", async () => {
+it("handles writing requests directly in chat without a mode selector", async () => {
   const writer = setup();
   await ready();
-  fireEvent.click(screen.getByRole("button", { name: /^Write$/ }));
-  fireEvent.change(screen.getByLabelText("More writing actions"), {
-    target: { value: "warmer" },
-  });
-  await send("Send the report.");
+  expect(
+    screen.queryByRole("button", { name: "Write" }),
+  ).not.toBeInTheDocument();
+  await send("Make this warmer: Send the report.");
   expect(writer.generate).toHaveBeenLastCalledWith(
-    expect.objectContaining({ mode: "write", action: "warmer" }),
+    expect.objectContaining({
+      mode: "chat",
+      text: "Make this warmer: Send the report.",
+    }),
     expect.any(Function),
   );
-  expect(screen.getByText("Review changes")).toBeInTheDocument();
 });
 it("preserves failed messages and forks a retry", async () => {
   const writer = setup();
@@ -114,7 +115,7 @@ it("preserves failed messages and forks a retry", async () => {
   expect(
     screen
       .getByRole("navigation", { name: "Conversations" })
-      .querySelectorAll("button"),
+      .querySelectorAll(".chat-select"),
   ).toHaveLength(2);
 });
 it("edit and resend keeps the original branch", async () => {
@@ -126,7 +127,7 @@ it("edit and resend keeps the original branch", async () => {
   expect(
     screen
       .getByRole("navigation", { name: "Conversations" })
-      .querySelectorAll("button"),
+      .querySelectorAll(".chat-select"),
   ).toHaveLength(2);
   expect(writer.generate).toHaveBeenLastCalledWith(
     expect.objectContaining({ text: "Changed", history: [] }),
@@ -179,7 +180,7 @@ it("automatically saves messages, restores history and can make it temporary", a
       key.startsWith("local-writer-chat"),
     ),
   ).toHaveLength(1);
-  await screen.findByText("Saved on this device");
+  expect(screen.queryByLabelText("Saved on device")).not.toBeInTheDocument();
   cleanup();
   setup();
   fireEvent.click(screen.getByRole("button", { name: "Open chat: Keep this" }));
@@ -223,7 +224,7 @@ it("can branch from a reply without making another model request", async () => {
   expect(
     screen
       .getByRole("navigation", { name: "Conversations" })
-      .querySelectorAll("button"),
+      .querySelectorAll(".chat-select"),
   ).toHaveLength(2);
   await send("Continue here");
   expect(writer.generate).toHaveBeenLastCalledWith(
@@ -274,13 +275,18 @@ it("stops saving a stale copy when another tab changes it", async () => {
   setup();
   await ready();
   await send("Saved request");
-  await screen.findByText("Saved on this device");
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "New chat" })).toBeEnabled(),
+  );
+  expect(screen.queryByLabelText("Saved on device")).not.toBeInTheDocument();
   const key = Object.keys(localStorage).find((key) =>
     key.startsWith("local-writer-chat-v1:"),
   )!;
   localStorage.removeItem(key);
   fireEvent(window, new StorageEvent("storage", { key, newValue: null }));
-  expect(screen.getByText("Temporary chat")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Save on device" }),
+  ).toBeInTheDocument();
   expect(localStorage.getItem(key)).toBeNull();
 });
 
@@ -326,7 +332,7 @@ it("keeps legacy retry metadata without exposing writing preference fields", asy
   );
   await send("Make this more direct: Acme might ship Friday.");
   expect(writer.generate).toHaveBeenLastCalledWith(
-    expect.objectContaining({ terms: "", instruction: "" }),
+    expect.objectContaining({ mode: "chat", terms: "", instruction: "" }),
     expect.any(Function),
   );
 });

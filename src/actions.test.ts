@@ -50,7 +50,8 @@ it("chat includes previous turns and does not apply rewrite instructions", () =>
     ],
   });
   expect(messages).toHaveLength(4);
-  expect(messages[0].content).not.toContain("editing");
+  expect(messages[0].content).toContain("You are Locai");
+  expect(messages[0].content).not.toContain("source_text field");
   expect(messages[2].content).toBe("A portable binary format.");
 });
 

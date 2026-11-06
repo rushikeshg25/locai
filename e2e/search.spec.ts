@@ -82,9 +82,7 @@ test("failed search can retry and cancellation never starts generation", async (
     page.getByRole("button", { name: "Send message" }),
   ).toBeVisible();
 });
-test("search toggle fits mobile composer and is absent in Write mode", async ({
-  page,
-}) => {
+test("search toggle fits the unified mobile composer", async ({ page }) => {
   await page.goto("/");
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 850 });
@@ -100,8 +98,7 @@ test("search toggle fits mobile composer and is absent in Write mode", async ({
       ),
     ).toBe(true);
   }
-  await page.getByRole("button", { name: "Write", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Search the web", exact: true }),
-  ).toHaveCount(0);
+  ).toBeVisible();
 });
