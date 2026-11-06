@@ -158,13 +158,13 @@ Model inference processes messages and attachments in this browser. Optional web
 
 | Data                                        | Where it lives        | How long it stays                                  |
 | ------------------------------------------- | --------------------- | -------------------------------------------------- |
-| Unsaved chats and drafts                    | Current tab memory    | Lost on reload or when the tab closes              |
+| Temporary chats and unsent drafts           | Current tab memory    | Lost on reload or when the tab closes              |
 | Saved conversations and attachments         | Browser local storage | Until deleted or browser data is cleared           |
 | Model files                                 | Browser cache         | Until deleted, evicted, or browser data is cleared |
 | Theme, selected model, auto-load preference | Browser local storage | Until changed or browser data is cleared           |
 | App files                                   | Service-worker cache  | Updated as new app versions activate               |
 
-Use the header's **Chat options** menu to **Save on device**, **Export** as Markdown, or **Delete** a conversation. Saved chats include later changes. **Make temporary** removes the saved copy while keeping the current tab's copy. Saved data is not encrypted by the app.
+Chats save automatically in browser storage after the first message, including later replies and attachments. Reopening the app restores your recent conversations. Use the header's **Chat options** menu to **Export** as Markdown or **Delete** a conversation. **Make temporary** removes the saved copy while keeping the current tab's copy. Saved data is not encrypted by the app.
 
 If another tab changes a saved chat, this tab marks its affected copy temporary to avoid silently overwriting that change. You can explicitly save it again or export it.
 
@@ -174,16 +174,16 @@ App updates activate in the background without forcing a page reload. After acti
 
 ## Troubleshooting
 
-| Symptom                          | What to check                                                                                                                                |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| WebGPU unavailable               | Use a WebGPU-capable browser with hardware acceleration enabled, on localhost or HTTPS. GPU and driver support still matter.                 |
-| Model loads after every refresh  | Expected: GPU memory is recreated. **Downloaded on this device** means weights are saved; auto-load handles preparation.                     |
-| Model shows Not downloaded again | Check the hostname, port, browser profile, private browsing, cleared site data, or storage eviction.                                         |
-| Progress appears stalled         | Open Models for the current phase and elapsed time. Some runtime phases do not report byte progress. Stop and retry if needed.               |
-| A larger model fails to load     | Try a smaller model and close other GPU-heavy tabs or applications. Check available browser storage too.                                     |
-| Offline startup fails            | Complete an online model load first. Weights may be cached while other required files are missing.                                           |
-| An older UI appears              | Allow the service-worker update to finish, then reload. Avoid clearing all site data as a first step: it removes models and saved chats too. |
-| A chat disappeared               | Chats are temporary unless saved. Check the same origin/profile, or import its contents manually from an earlier Markdown export.            |
+| Symptom                          | What to check                                                                                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WebGPU unavailable               | Use a WebGPU-capable browser with hardware acceleration enabled, on localhost or HTTPS. GPU and driver support still matter.                      |
+| Model loads after every refresh  | Expected: GPU memory is recreated. **Downloaded on this device** means weights are saved; auto-load handles preparation.                          |
+| Model shows Not downloaded again | Check the hostname, port, browser profile, private browsing, cleared site data, or storage eviction.                                              |
+| Progress appears stalled         | Open Models for the current phase and elapsed time. Some runtime phases do not report byte progress. Stop and retry if needed.                    |
+| A larger model fails to load     | Try a smaller model and close other GPU-heavy tabs or applications. Check available browser storage too.                                          |
+| Offline startup fails            | Complete an online model load first. Weights may be cached while other required files are missing.                                                |
+| An older UI appears              | Allow the service-worker update to finish, then reload. Avoid clearing all site data as a first step: it removes models and saved chats too.      |
+| A chat disappeared               | Chats save automatically unless marked temporary. Check the same origin/profile, or import its contents manually from an earlier Markdown export. |
 
 Model initialization times out after ten minutes; generation times out after two minutes. Local models can make mistakes. Review facts, names, numbers, and meaning before using their output.
 

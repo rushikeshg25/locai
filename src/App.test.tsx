@@ -170,7 +170,7 @@ it("renders Markdown safely without remote images or executable HTML", async () 
     "javascript:alert(1)",
   );
 });
-it("saves only after opt-in, restores saved history and can make it temporary", async () => {
+it("automatically saves messages, restores history and can make it temporary", async () => {
   setup();
   await ready();
   await send("Keep this");
@@ -178,8 +178,7 @@ it("saves only after opt-in, restores saved history and can make it temporary", 
     Object.keys(localStorage).filter((key) =>
       key.startsWith("local-writer-chat"),
     ),
-  ).toHaveLength(0);
-  fireEvent.click(screen.getByRole("button", { name: "Save on device" }));
+  ).toHaveLength(1);
   await screen.findByText("Saved on this device");
   cleanup();
   setup();
@@ -275,7 +274,6 @@ it("stops saving a stale copy when another tab changes it", async () => {
   setup();
   await ready();
   await send("Saved request");
-  fireEvent.click(screen.getByRole("button", { name: "Save on device" }));
   await screen.findByText("Saved on this device");
   const key = Object.keys(localStorage).find((key) =>
     key.startsWith("local-writer-chat-v1:"),
@@ -408,4 +406,33 @@ it("does not auto-download missing models", async () => {
   fireEvent.click(screen.getByLabelText("Models"));
   await screen.findByRole("button", { name: "Download model" });
   expect(writer.load).not.toHaveBeenCalled();
+});
+
+it("does not store empty chats and warns when automatic saving fails", async () => {
+  setup();
+  await ready();
+  expect(
+    Object.keys(localStorage).filter((key) =>
+      key.startsWith("local-writer-chat-v1:"),
+    ),
+  ).toHaveLength(0);
+  const original = Storage.prototype.setItem;
+  const storage = vi
+    .spyOn(Storage.prototype, "setItem")
+    .mockImplementation(function (this: Storage, key, value) {
+      if (key.startsWith("local-writer-chat-v1:"))
+        throw new DOMException("Full", "QuotaExceededError");
+      original.call(this, key, value);
+    });
+  try {
+    await send("Keep this despite full storage");
+    expect(
+      await screen.findByText(
+        "Could not save this chat in browser storage. Export it to keep your messages.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("We might ship Friday.")).toBeInTheDocument();
+  } finally {
+    storage.mockRestore();
+  }
 });

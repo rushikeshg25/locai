@@ -9,7 +9,7 @@ async function connect(page: Page) {
     page.getByRole("button", { name: "Model ready", includeHidden: true }),
   ).toBeAttached();
 }
-test("chat context, Markdown, attachments, branching and opt-in persistence", async ({
+test("chat context, Markdown, attachments, branching and automatic persistence", async ({
   page,
 }) => {
   const external: string[] = [];
@@ -47,7 +47,6 @@ test("chat context, Markdown, attachments, branching and opt-in persistence", as
   ).toHaveCount(2);
   await expect(page.getByText("Thinking…")).toHaveCount(0);
   await page.getByLabel("Chat options").click();
-  await page.getByRole("button", { name: "Save on device" }).click();
   await expect(
     page.getByText("Saved on this device", { exact: true }),
   ).toBeVisible();

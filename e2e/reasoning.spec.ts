@@ -43,7 +43,6 @@ test("reasoning streams separately, persists, and stays out of later context", a
   expect(second.messages[2].content).toBe("The answer is 42.");
   expect(JSON.stringify(second.messages)).not.toContain("Check the arithmetic");
   await page.getByLabel("Chat options").click();
-  await page.getByRole("button", { name: "Save on device" }).click();
   await page.reload();
   await page
     .getByRole("button", { name: "Open chat: What is six times seven?" })

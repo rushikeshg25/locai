@@ -85,10 +85,9 @@ export default function App({
   const [supported, setSupported] = useState<boolean | null>(null);
   const [model, setModel] = useState<string>(preferredModel);
   const [saved] = useState(readSaved);
-  const [chats, setChats] = useState<Conversation[]>(() => [
-    newConversation(),
-    ...saved.chats,
-  ]);
+  const [chats, setChats] = useState<Conversation[]>(() =>
+    saved.chats.length ? saved.chats : [newConversation()],
+  );
   const [active, setActive] = useState("");
   const chat = chats.find((item) => item.id === active) ?? chats[0];
   const [text, setText] = useState("");
@@ -128,25 +127,52 @@ export default function App({
     window.addEventListener("storage", changed);
     return () => window.removeEventListener("storage", changed);
   }, []);
+  const persistedChats = useRef(
+    new Map(saved.chats.map((item) => [item.id, item])),
+  );
   useEffect(() => {
-    for (const item of chats) {
-      if (
-        !item.saved ||
-        item.messages.some((message) => message.state === "streaming")
-      )
-        continue;
-      try {
-        saveChat(item);
-        persistFailures.current.delete(item.id);
-      } catch {
-        if (!persistFailures.current.has(item.id)) {
-          setFeedback(
-            "Could not update the saved conversation. Export it to keep your latest changes.",
-          );
-          persistFailures.current.add(item.id);
+    function persist(includeStreaming: boolean) {
+      for (const item of chats) {
+        if (
+          !item.saved ||
+          !item.messages.length ||
+          persistedChats.current.get(item.id) === item
+        )
+          continue;
+        if (
+          !includeStreaming &&
+          persistedChats.current.has(item.id) &&
+          item.messages.some((message) => message.state === "streaming")
+        )
+          continue;
+        try {
+          saveChat(item);
+          persistedChats.current.set(item.id, item);
+          persistFailures.current.delete(item.id);
+        } catch {
+          if (!persistFailures.current.has(item.id)) {
+            setFeedback(
+              "Could not save this chat in browser storage. Export it to keep your messages.",
+            );
+            persistFailures.current.add(item.id);
+          }
         }
       }
     }
+    persist(false);
+    // Save settled chunks without writing localStorage on every streamed token.
+    const timer = window.setTimeout(() => persist(true), 500);
+    const flush = () => persist(true);
+    const hidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", hidden);
+    };
   }, [chats]);
   const [resend, setResend] = useState<Message[] | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null);
@@ -341,6 +367,7 @@ export default function App({
     if (fork) {
       const branch = {
         ...newConversation(requestMode),
+        saved: chat.saved,
         title: `${source.slice(0, 36)} (branch)`,
         messages: [...prefix, user, answer],
       };
@@ -495,7 +522,7 @@ export default function App({
                   </small>
                   <Button
                     className="secondary"
-                    disabled={busy || !chat.messages.length}
+                    disabled={busy}
                     onClick={() => {
                       try {
                         if (chat.saved) {
@@ -798,6 +825,7 @@ export default function App({
                         onClick={() => {
                           const branch = {
                             ...newConversation(chat.mode),
+                            saved: chat.saved,
                             title: `${chat.title.slice(0, 36)} (branch)`,
                             messages: chat.messages.slice(0, index + 1),
                           };
@@ -1197,9 +1225,9 @@ export default function App({
         >
           <h2 id="info-title">About Locai</h2>
           <p>
-            Browser models run on this device. Chats are temporary unless you
-            choose Save on device. Saved chats and attachments remain in this
-            browser until deleted.
+            Browser models run on this device. Chats and attachments save
+            automatically in this browser until deleted. Choose Make temporary
+            in Chat options to keep a conversation only for this session.
           </p>
           <p>
             Model downloads contact Hugging Face and the runtime host. Messages

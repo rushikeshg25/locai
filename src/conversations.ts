@@ -43,7 +43,7 @@ export function newConversation(mode: Mode = "chat"): Conversation {
     mode,
     messages: [],
     updatedAt: Date.now(),
-    saved: false,
+    saved: true,
   };
 }
 export function messageText(message: Pick<Message, "content" | "attachments">) {
