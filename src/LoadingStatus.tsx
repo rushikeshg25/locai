@@ -1,46 +1,43 @@
-import { useEffect, useState } from "react";
 export function LoadingStatus({
   progress,
 }: {
-  progress: { value: number; message: string };
+  progress?: { value: number; message: string };
 }) {
-  const [started] = useState(Date.now),
-    [now, setNow] = useState(Date.now),
-    [updated, setUpdated] = useState(Date.now);
-  useEffect(() => {
-    setUpdated(Date.now());
-  }, [progress.message, progress.value]);
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  const message = progress.message;
-  const phase = /shader|compile|pipeline/i.test(message)
-    ? "Preparing GPU"
-    : /parameter|weight|fetching param/i.test(message)
-      ? "Loading weights"
-      : /connect.*server/i.test(message)
-        ? "Connecting server"
-        : "Loading runtime and model files";
+  const value = Math.max(0, Math.min(1, progress?.value ?? 0));
   return (
-    <div className="loading">
-      <div className="loading-heading">
-        <small>{phase}</small>
-        <small>{Math.floor((now - started) / 1000)}s</small>
-      </div>
-      <progress
-        max={1}
-        value={progress.value > 0 ? Math.min(progress.value, 1) : undefined}
-        aria-label="Model loading"
+    <svg
+      className={`model-progress${value === 0 ? " indeterminate" : ""}`}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      role="progressbar"
+      aria-label="Loading model"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={value > 0 ? Math.round(value * 100) : undefined}
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        opacity="0.2"
       />
-      <p role="status">{message}</p>
-      {now - updated > 30000 && (
-        <p role="status">
-          No new runtime progress for {Math.floor((now - updated) / 1000)}s. It
-          may still be downloading or compiling. Stop to cancel, then retry from
-          Models.
-        </p>
-      )}
-    </div>
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        pathLength="100"
+        strokeDasharray="100"
+        strokeDashoffset={100 - (value > 0 ? value * 100 : 25)}
+        strokeLinecap="round"
+        transform="rotate(-90 12 12)"
+      />
+    </svg>
   );
 }

@@ -362,7 +362,6 @@ header {
   border-color: var(--line);
 }
 .feedback,
-.loading p,
 .draft-note {
   font-size: 12px;
   color: var(--muted);
@@ -375,11 +374,6 @@ header {
   padding: 3px 8px;
   min-height: 28px;
   margin-left: 8px;
-}
-.loading progress {
-  width: 100%;
-  height: 4px;
-  accent-color: var(--focus);
 }
 .model-settings {
   position: relative;
@@ -682,10 +676,6 @@ del {
   background: var(--surface);
   padding: 12px;
   border-radius: 8px;
-}
-.loading-heading {
-  display: flex;
-  justify-content: space-between;
 }
 .context-budget {
   font-size: 12px;
@@ -1088,13 +1078,6 @@ del {
   border-left: 2px solid var(--focus);
   font-size: 13px;
 }
-.model-loading-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--focus);
-  flex-shrink: 0;
-}
 .chat-search-field {
   position: relative;
   margin: 0;
@@ -1356,16 +1339,6 @@ input[type="radio"] {
 .model-controls {
   row-gap: 8px;
 }
-.loading {
-  padding: 12px;
-  margin-bottom: 12px;
-  border-radius: var(--control-radius);
-  background: var(--bg);
-}
-.loading p {
-  margin: 6px 0 0;
-  overflow-wrap: anywhere;
-}
 @media (max-width: 600px), (pointer: coarse) {
   button,
   .web-search-toggle,
@@ -1481,4 +1454,22 @@ input[type="radio"] {
   padding: 8px 12px;
   gap: 6px;
   box-shadow: 0 4px 16px #0003;
+}
+
+.model-progress {
+  flex-shrink: 0;
+  color: var(--focus);
+}
+.model-progress.indeterminate {
+  animation: model-progress-spin 1s linear infinite;
+}
+@keyframes model-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .model-progress.indeterminate {
+    animation: none;
+  }
 }

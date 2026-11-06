@@ -182,7 +182,7 @@ test("sending without a model keeps the draft and offers model setup", async ({
   await expect(page.locator(".assistant")).toHaveCount(1);
 });
 
-test("model loading stays in its dropdown without moving the composer", async ({
+test("model loading uses a fixed-size ring without moving the composer", async ({
   page,
 }) => {
   await installBrowserModel(page, 2000);
@@ -191,12 +191,17 @@ test("model loading stays in its dropdown without moving the composer", async ({
     await page.setViewportSize({ width, height: 900 });
     const input = page.getByLabel("Your text");
     const before = await input.boundingBox();
+    const nameBefore = await page.locator(".model-name").boundingBox();
     await page.getByLabel("Models", { exact: true }).click();
     await page.getByRole("button", { name: "Download model" }).click();
     await expect(
-      page.locator(".model-panel").getByRole("progressbar"),
+      page.locator(".model-settings summary").getByRole("progressbar"),
     ).toBeVisible();
     expect((await input.boundingBox())!.y).toBe(before!.y);
+    expect(await page.locator(".model-name").boundingBox()).toEqual(nameBefore);
+    await expect(
+      page.locator(".model-panel").getByRole("progressbar"),
+    ).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Model ready", includeHidden: true }),
     ).toBeAttached();

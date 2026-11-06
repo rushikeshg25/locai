@@ -76,13 +76,10 @@ export function ModelPicker({
         aria-label="Models"
         title="Select, download or manage writing models"
       >
-        <Icon name="model" />
-        {status === "loading" && (
-          <span
-            className="model-loading-dot"
-            role="status"
-            aria-label="Loading model"
-          />
+        {status === "loading" ? (
+          <LoadingStatus progress={progress} />
+        ) : (
+          <Icon name="model" />
         )}
         <span className="model-name">
           {models.find((item) => item.id === model)?.label ?? model}
@@ -107,9 +104,6 @@ export function ModelPicker({
           <p role="alert" className="model-required">
             Load a model before sending. Your draft is kept.
           </p>
-        )}
-        {status === "loading" && progress && (
-          <LoadingStatus progress={progress} />
         )}
         {supported !== true && (
           <p className="muted">
