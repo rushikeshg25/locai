@@ -159,16 +159,14 @@ it("uses native thinking only on supported chat models and disables it for writi
 
 it("requests a bounded local title without chat history or reasoning", async () => {
   vi.stubGlobal("Worker", FakeWorker);
-  const create = vi
-    .fn()
-    .mockResolvedValue({
-      choices: [
-        {
-          message: { content: '"Planning a weekend trip"' },
-          finish_reason: "stop",
-        },
-      ],
-    });
+  const create = vi.fn().mockResolvedValue({
+    choices: [
+      {
+        message: { content: '"Planning a weekend trip"' },
+        finish_reason: "stop",
+      },
+    ],
+  });
   runtime.create.mockResolvedValue({ chat: { completions: { create } } });
   const writer = new LocalWriter();
   await writer.load("Qwen3-0.6B-q4f16_1-MLC", vi.fn());

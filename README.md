@@ -10,7 +10,7 @@ The app is a static React application. Your browser downloads the model files an
 
 You need a browser with WebGPU support and hardware acceleration enabled. Open the app over **localhost or HTTPS**. Available GPU memory determines which models your device can run.
 
-### Run with Docker 
+### Run with Docker
 
 Clone the repository, then open its directory:
 
