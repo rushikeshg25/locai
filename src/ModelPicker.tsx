@@ -201,7 +201,8 @@ export function ModelPicker({
               disabled={busy || !reasoningAllowed}
               onChange={(event) => onReasoning(event.target.checked)}
             />
-            Reasoning <small>Chat only · may take longer</small>
+            <span>Reasoning</span>
+            <small>Chat only · may take longer</small>
           </label>
         )}
         <label>
@@ -210,8 +211,8 @@ export function ModelPicker({
             checked={autoLoad}
             disabled={busy}
             onChange={(event) => onAutoLoad(event.target.checked)}
-          />{" "}
-          Auto-load downloaded model
+          />
+          <span>Auto-load downloaded model</span>
         </label>
         <details className="model-storage-details">
           <summary>Storage &amp; details</summary>

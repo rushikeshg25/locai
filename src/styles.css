@@ -476,7 +476,10 @@ header {
   margin: 12px 0;
 }
 .model-panel label:not(.model-option) {
-  display: block;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
   font-size: 12px;
   margin: 10px 0;
 }
@@ -1446,8 +1449,13 @@ input[type="radio"] {
   line-height: 1.7;
 }
 .reasoning-setting small {
-  display: block;
-  margin-left: 24px;
+  grid-column: 2;
+}
+.model-panel label > input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  justify-self: center;
 }
 
 .selection-cite {
