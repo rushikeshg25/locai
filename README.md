@@ -1,209 +1,239 @@
 # Locai
 
-Chat with a language model, work through ideas, and revise drafts—all in your browser. Locai runs models on your device through WebGPU, with no account, API key, or model server.
+AI chat that runs in your browser, on your device.
 
-The app is a static React application. Your browser downloads the model files and performs inference; Nginx serves the app and forwards optional web searches to a bundled SearXNG service. No model inference runs on the server.
+Ask questions, explore ideas, and improve your writing with local language models. No account, API key, or inference server required.
 
-## Get started
+Locai uses **WebGPU** through **WebLLM** to run models locally. Optional web search uses **SearXNG** to bring source snippets into the conversation.
 
-You need a browser with WebGPU support and hardware acceleration enabled. Open the app over **localhost or HTTPS**. Available GPU memory determines which models your device can run.
+## Features
 
-### Run with Docker
+- **One chat interface** for questions, writing, brainstorming, and explanations.
+- **Local inference** with downloadable models.
+- **Automatic model loading** when the selected model is already downloaded.
+- **Saved conversations** with generated titles, search, rename, pin, and delete.
+- **A fresh chat on startup**, with previous conversations available in the sidebar.
+- **Web search** with source links and numbered citations.
+- **Reasoning support** for Qwen 3, with thinking separated from the final answer.
+- **Text and Markdown attachments** for reference material.
+- **Select-to-cite** to quote part of a message in your next request.
+- **Retry, edit and resend, and branching** without overwriting the original conversation.
+- **Markdown responses**, code copying, light and dark themes, and keyboard controls.
+- **Markdown export** and an optional temporary-chat mode.
 
-Clone the repository, then open its directory:
+## Requirements
+
+Use a desktop browser with:
+
+- WebGPU support and hardware acceleration enabled.
+- Enough GPU memory for the selected model.
+- Access through **HTTPS or localhost**.
+- Internet access for the initial model download.
+
+**Mobile is not supported yet.** Mobile devices show an availability notice instead of starting the chat application.
+
+Model compatibility depends on your browser, GPU, drivers, and available memory.
+
+## Run locally
+
+### Docker
 
 ```sh
 git clone https://github.com/rushikeshg25/locai.git
 cd locai
-```
-
-From the repository root:
-
-```sh
 docker compose up --build -d --wait
 ```
 
 Open **http://localhost:4174**.
 
-```sh
-# Use a different host port
-PORT=8080 docker compose up --build -d --wait
+Docker Compose starts the app and its SearXNG search service. Docker does not need GPU access: inference runs in your browser.
 
-# Stop the app
-docker compose down
+To use another port:
+
+```sh
+PORT=8080 docker compose up --build -d --wait
 ```
 
-Docker does not need access to your GPU. Models and saved chats live in the browser, not the container. Restarting or rebuilding the container does not delete that browser data. Keep the same hostname and port to reuse it.
+To stop the services:
 
-### Run with Node.js
+```sh
+docker compose stop
+```
 
-Use Node.js 24 and npm, matching the Docker build and CI configuration.
+Models and conversations live in browser storage, not in the containers. Keep the same hostname, port, and browser profile to reuse them.
+
+### Node.js
+
+Use **Node.js 24** and npm.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite. To build and preview the production app:
+Open the URL printed by Vite.
+
+For a production build:
 
 ```sh
 npm run build
 npm run preview -- --host 127.0.0.1 --port 4175
 ```
 
-For web search during development or preview, also run `docker compose up --build -d --wait`. Vite forwards `/api/search` to the Docker gateway at `http://127.0.0.1:4174`. The rest of the app works without Docker. If you change the Docker port, update that proxy target in `vite.config.ts`.
+The app works without Docker, but web search needs a search backend. The Vite configuration forwards `/api/search` to the Docker gateway at `http://127.0.0.1:4174`.
 
-The service worker and offline app cache are enabled in production builds, not the development server.
+The service worker is enabled in production builds, not during development.
 
-## Start a conversation
+## Using Locai
 
-1. Open the model selector beside Send.
-2. Select a model to load it immediately. The first download needs internet.
-3. Wait for the model to be ready, then send a message.
+### Choose a model
 
-The selected downloaded model loads automatically on startup. Sending before a model is ready opens the selector and preserves your draft.
+Open the model selector beside Send and select a model. Locai loads it immediately, downloading missing files when necessary.
 
-**Downloading and loading are different.** Downloading saves weights in browser storage. Loading prepares those weights in GPU memory. Refreshing the page unloads the running model, so it must load again—even when no weights need downloading. Missing runtime or tokenizer files can still require internet.
+- Download progress appears beside the model.
+- Selecting a failed or stopped model retries loading.
+- Selecting an already-loaded model does not reload it.
+- Switching models releases the previous model.
+- The bin icon deletes that model’s cached files after confirmation. Chats remain intact.
 
-Mobile devices show a short availability notice. Use a desktop browser to run Locai; mobile model execution is not supported yet.
+The selected downloaded model loads automatically when you reopen Locai.
 
-## Chat workspace
+**Loading again does not necessarily mean downloading again.** Downloaded weights stay in browser storage, but each visit must prepare them in GPU memory. Missing runtime or tokenizer files may still need internet.
 
-- **Chat:** ask questions and continue conversations with context from completed turns.
-- **Writing:** ask directly in chat to fix grammar, change tone, summarize, or rewrite text. No mode switch is needed.
-- **Chat history:** Opening or refreshing Locai starts a fresh chat; saved conversations remain in the sidebar. the loaded model creates a short title from your first message after the first reply. Titles save with the conversation; if generation fails, the message excerpt remains. Search conversation titles and message text. Hover or focus a chat to rename, pin/unpin, or delete it; these controls remain visible on touch devices. Pinned chats appear first, and titles and pins save automatically. Collapse the desktop sidebar into an icon rail for Expand, New chat, and Search. Mobile uses a drawer.
-- **Reply actions:** copy, cite selected text, reuse as input, or branch from a reply. Retry and edit/resend create a new branch while keeping the original conversation.
-- **Attachments:** add plain-text or Markdown reference files. Their contents are included as text, not executed.
-- **Display:** light and dark themes, Markdown replies, tables, code blocks with Copy, and streamed responses. Scrolling up pauses automatic following; **Jump to latest** returns to the reply.
+### Chat and write
 
-New chat keeps the loaded model. Stop preserves partial output and normally leaves the model ready. If cancellation stalls, the worker is unloaded after five seconds.
+Type your request directly:
 
-### Keyboard controls
+> Explain database indexes with a small example.
 
-| Key                        | Action                                                                   |
-| -------------------------- | ------------------------------------------------------------------------ |
-| Enter                      | Send the draft                                                           |
-| Shift+Enter                | Insert a new line                                                        |
-| Ctrl+Enter / Command+Enter | Insert a new line at the cursor or replace selected text with a new line |
-| Escape                     | Close an open model picker, chat menu, or mobile drawer                  |
-| Tab / Shift+Tab            | Move between controls                                                    |
+> Make this message more professional: …
 
-IME composition does not submit a message. Icon controls have accessible labels; model progress and feedback use live status messages. Keyboard users can skip directly to the composer. Menus close when focus leaves them, and Escape or their Close button returns focus to the trigger. Reply animation respects reduced-motion preferences.
+> Summarize the attached notes into five action items.
 
-### Writing controls and limits
+There is no separate writing mode. Locai’s system prompt provides a concise assistant persona and guidance for preserving meaning when editing text.
 
-Put writing instructions and text together in the message box, for example: “Make this more professional: ...”. Select message text and click **Cite** to append it as a quote to your draft. After selecting text, Tab focuses Cite; Enter inserts the quote, and Escape dismisses the action. Saved legacy writing requests retain their original retry settings.
+### Manage conversations
 
-| Input                    | Limit                                             |
-| ------------------------ | ------------------------------------------------- |
-| Draft                    | 500 words and 6,000 characters                    |
-| Attachments              | Up to 3 UTF-8 `.txt`, `.md`, or `.markdown` files |
-| Combined attachment size | 24,000 bytes                                      |
+Chats save automatically after the first message. Opening or refreshing Locai starts a new chat; saved conversations remain in the sidebar.
 
-The model context budget can impose a smaller limit. Older turns may be excluded to fit; an oversized newest request is rejected rather than silently truncated. The ring beside the model name estimates conversation use of the remaining input budget after system instructions and reply space are reserved. It uses conservative UTF-8 bytes, not measured tokens or GPU memory.
+Hover or keyboard-focus a conversation to reveal:
 
-## Reasoning
+- **Three-dot menu:** Rename, Pin/Unpin, and Delete.
+- **Pin button:** Keep a conversation at the top of the list.
 
-Select **Qwen 3 0.6B** in Models and download/load it. Its **Reasoning** checkbox controls native thinking for messages and is enabled by default. Existing models keep their current behavior. Legacy writing retries still disable thinking.
+Titles are generated from the first message when possible. Manually assigned titles are preserved.
 
-While the model works, a collapsed **Thinking** section holds its intermediate text. The final answer appears separately. Thinking is model-generated text, not a verified explanation or a guarantee of correctness. Reasoning can take longer, and a small model can still make mistakes.
+Use the header’s **Chat options** menu to export a conversation as Markdown or make it temporary. Temporary chats and unsent drafts disappear when the page reloads or closes.
 
-The setting is saved on this browser. Saved conversations retain thinking text; Markdown exports label it separately. Copy, reuse, and subsequent chat requests use only the final answer. Stop preserves partial thinking. If generation ends before an answer, the app says so rather than displaying the reasoning as an answer.
+### Attachments and citations
 
-Reasoning shares the model's 4,096-token context. It reserves up to 2,048 output tokens (versus 1,200 normally), leaving less room for questions, history, and web snippets. The existing two-minute generation timeout still applies. The model can reach either limit before producing a final answer.
+Attach up to three UTF-8 `.txt`, `.md`, or `.markdown` files, with a combined size of **24,000 bytes**.
 
-This uses WebLLM's native `extra_body.enable_thinking` option for [Qwen3](https://huggingface.co/Qwen/Qwen3-0.6B), not a prompt that asks an unsupported model to pretend to reason.
+Select text in a message and choose **Cite** to append it as a quote to your draft.
 
-## Web search
+Drafts are limited to **500 words and 6,000 characters**. The model’s context budget may impose a smaller limit.
 
-Turn on **Web** beside the attachment button before sending a chat message. Locai searches the current question, shows search progress, and passes up to four result snippets to the local model. Numbered citations open source links; **Sources** lists the actual results used. Stop cancels a pending search. Failed searches show an error and can be retried.
+### Context indicator
 
-Docker Compose includes [SearXNG](https://docs.searxng.org/), which queries public search engines. **No API key, account, or paid search subscription is required.** The search service has no exposed host port. Web is off by default and is available only in Chat mode. It needs internet.
+The ring beside the model name estimates how much conversation input space is used after system instructions and reply space are reserved.
 
-Only the current question (up to 300 characters) is sent to search—not earlier messages or attachment contents. Search engines and your search server can see that query. Source snippets are retained when you save a conversation; Markdown exports include source titles and links.
-
-This is search-assisted local chat, not a full-page browser or multi-step research agent. Answers use snippets; small models may misread evidence or omit citations. Source links are evidence to inspect, not a guarantee of accuracy. Results can be limited by engine outages or CAPTCHAs. The app never silently substitutes an unsourced answer when search fails.
-
-Engines and timeouts are configured in `docker/searxng/settings.yml`. Search requests time out after 20 seconds and the gateway limits each client to 10 requests per minute with a small burst allowance. Before exposing the service publicly, set a private `SEARXNG_SECRET`, add access controls at your reverse proxy, and review SearXNG deployment guidance. The bundled settings are intended for local use.
+It uses a **conservative byte-based budget**, not measured token usage or GPU memory. Older conversation turns may be excluded to fit. An oversized newest request is rejected rather than silently truncated.
 
 ## Models
 
-All listed models use WebLLM-compatible quantized weights. Qwen 2.5 0.5B is the default because its download is small; it is not a measured quality winner.
+| Model | Approximate weights | Estimated GPU memory |
+| --- | ---: | ---: |
+| Phi 3.5 Mini | 2.15 GB | 3.7 GB |
+| Llama 3.2 3B | 1.81 GB | 2.3 GB |
+| Qwen 2.5 3B | 1.74 GB | 2.5 GB |
+| Qwen 2.5 1.5B | 870 MB | 1.6 GB |
+| Llama 3.2 1B | 695 MB | 880 MB |
+| Qwen 3 0.6B | 335 MB | 1.4 GB |
+| Qwen 2.5 0.5B | 280 MB | 945 MB |
 
-| Model                   | Approximate weights | Estimated GPU memory |
-| ----------------------- | ------------------- | -------------------- |
-| Qwen 2.5 0.5B           | 280 MB              | 945 MB               |
-| Qwen 2.5 1.5B           | 870 MB              | 1.6 GB               |
-| Llama 3.2 1B            | 695 MB              | 880 MB               |
-| Llama 3.2 3B            | 1.81 GB             | 2.3 GB               |
-| Qwen 2.5 3B             | 1.74 GB             | 2.5 GB               |
-| Phi 3.5 Mini            | 2.15 GB             | 3.7 GB               |
-| Qwen 3 0.6B (reasoning) | 335 MB              | 1.4 GB               |
+Qwen 2.5 0.5B is the default. These estimates exclude some runtime and browser overhead and do not guarantee device compatibility.
 
-These are estimates, not device compatibility guarantees. Runtime, tokenizer, browser, and cache overhead are additional. The model IDs and displayed estimates are defined in [`src/features/models/models.ts`](src/features/models/models.ts); runtime configuration comes from the installed WebLLM registry.
+Model definitions are maintained in [`src/models.ts`](src/models.ts).
 
-The model dropdown keeps progress and actions separate from the composer:
+### Reasoning
 
-- Selecting a model loads it immediately, reusing downloaded weights and downloading missing files. Selecting it again retries a failed or stopped load.
-- Switching models releases the previous worker.
-- The bin button beside a downloaded model asks for confirmation, then removes the selected model's cached files. It does not delete chats.
-- **About Locai** explains browser storage and model loading.
+Qwen 3 0.6B supports a **Reasoning** toggle in the model selector.
 
-Switching models unloads the current worker. Initial downloads remain explicit; automatic startup loading only begins when the selected weights are detected in cache.
+Thinking appears in a separate, collapsed section. Only the final answer is reused as conversation history. Thinking text is model output, not a verified explanation.
 
-## Privacy, storage, and offline use
+Reasoning uses more of the available context and can take longer. A model may reach its output limit or timeout before producing a final answer.
 
-Model inference processes messages and attachments in this browser. Optional web search sends the current question to search engines through SearXNG; it does not send attachment contents or chat history. Model downloads contact Hugging Face and the runtime host. There are no accounts or analytics, and no inference backend receives your messages. Generated HTML is disabled, and model-generated remote images are not fetched.
+## Web search
 
-| Data                                | Where it lives        | How long it stays                                  |
-| ----------------------------------- | --------------------- | -------------------------------------------------- |
-| Temporary chats and unsent drafts   | Current tab memory    | Lost on reload or when the tab closes              |
-| Saved conversations and attachments | Browser local storage | Until deleted or browser data is cleared           |
-| Model files                         | Browser cache         | Until deleted, evicted, or browser data is cleared |
-| Theme, selected model               | Browser local storage | Until changed or browser data is cleared           |
-| App files                           | Service-worker cache  | Updated as new app versions activate               |
+Enable **Web** before sending a message.
 
-Chats save automatically in browser storage after the first message, including later replies and attachments. Reopening the app restores your recent conversations. Use the header's **Chat options** menu to **Export** as Markdown or **Delete** a conversation. **Make temporary** removes the saved copy while keeping the current tab's copy. Saved data is not encrypted by the app.
+Locai sends the current question to SearXNG and gives the local model up to four search-result snippets. Responses can cite these sources, and the source list shows the results used.
 
-If another tab changes a saved chat, this tab marks its affected copy temporary to avoid silently overwriting that change. You can explicitly save it again or export it.
+- No search API key or paid subscription is required.
+- Web search is off by default.
+- Only the current question, limited to 300 characters, is sent.
+- Earlier messages and attachment contents are not included in the search query.
+- Search requires internet and a configured search service.
+- Search failures are shown explicitly.
 
-Offline use needs both the cached production app and all required model files. A downloaded-weights label alone does not guarantee that runtime, config, and tokenizer files are cached. Different hostnames, ports, browser profiles, and private windows have separate storage.
+This is snippet-based search, not full-page browsing or an autonomous research agent. Check the linked sources: small models can misinterpret results or omit citations.
 
-App updates activate in the background without forcing a page reload. After activation, a normal reload uses the updated app. Unsaved drafts still disappear on a reload you initiate. Updating the app does not intentionally clear model caches or saved chats.
+The bundled SearXNG setup is intended for local use. Before public deployment, configure a private `SEARXNG_SECRET`, appropriate access controls, and an HTTPS reverse proxy.
+
+## Privacy and storage
+
+Messages and attachments are processed locally for model inference.
+
+Network access is used for:
+
+- Model and runtime downloads.
+- Optional web-search queries.
+- Source links you choose to open.
+
+Generated HTML is disabled, and model-generated remote images are not fetched automatically.
+
+| Data | Storage |
+| --- | --- |
+| Saved chats and attachments | Browser local storage |
+| Downloaded model files | Browser cache |
+| Theme and selected model | Browser local storage |
+| Temporary chats and unsent drafts | Current tab memory |
+| Production app files | Service-worker cache |
+
+Saved conversations are **not encrypted by Locai**. Clearing site data removes chats and downloads. Browsers may also evict cached model files.
+
+Different origins, ports, browser profiles, and private windows have separate storage. There is no account sync.
+
+Offline use requires the production app and all model dependencies to be cached. A downloaded-weights label alone does not guarantee that every runtime file is available offline.
+
+## Keyboard controls
+
+| Shortcut | Action |
+| --- | --- |
+| Enter | Send |
+| Shift+Enter | New line |
+| Ctrl+Enter / Command+Enter | New line |
+| Tab / Shift+Tab | Move between controls |
+| Escape | Dismiss an open menu or dialog |
+
+IME composition does not submit a message. Controls have accessible labels and visible focus states.
 
 ## Troubleshooting
 
-| Symptom                          | What to check                                                                                                                                     |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WebGPU unavailable               | Use a WebGPU-capable browser with hardware acceleration enabled, on localhost or HTTPS. GPU and driver support still matter.                      |
-| Model loads after every refresh  | Expected: GPU memory is recreated. **Downloaded on this device** means weights are saved; auto-load handles preparation.                          |
-| Model shows Not downloaded again | Check the hostname, port, browser profile, private browsing, cleared site data, or storage eviction.                                              |
-| Progress appears stalled         | Open Models for the current phase and elapsed time. Some runtime phases do not report byte progress. Stop and retry if needed.                    |
-| A larger model fails to load     | Try a smaller model and close other GPU-heavy tabs or applications. Check available browser storage too.                                          |
-| Offline startup fails            | Complete an online model load first. Weights may be cached while other required files are missing.                                                |
-| An older UI appears              | Allow the service-worker update to finish, then reload. Avoid clearing all site data as a first step: it removes models and saved chats too.      |
-| A chat disappeared               | Chats save automatically unless marked temporary. Check the same origin/profile, or import its contents manually from an earlier Markdown export. |
+| Issue | What to try |
+| --- | --- |
+| WebGPU unavailable | Enable hardware acceleration and use a supported desktop browser over HTTPS or localhost. |
+| Model loads after every refresh | Expected: cached weights must be prepared in GPU memory again. |
+| Model downloads again | Check the browser profile, hostname, port, cleared site data, or cache eviction. |
+| Download appears stuck | Check the model’s progress ring. Stop and select the model again to retry. |
+| Large model fails to load | Try a smaller model and close other GPU-heavy applications or tabs. |
+| Web search fails | Check that SearXNG is running and reachable. Search engines may rate-limit requests or require CAPTCHAs. |
+| Old interface appears | Allow the service worker to update, then reload. Avoid clearing all site data first. |
+| Chat is missing | Check the same browser profile and origin, and whether the chat was temporary. |
 
-Model initialization times out after ten minutes; generation times out after two minutes. Local models can make mistakes. Review facts, names, numbers, and meaning before using their output.
+Model loading times out after ten minutes. Generation times out after two minutes.
 
-## Deployment and runtime configuration
-
-The Docker image builds with Node 24 and serves static files through non-root Nginx. Compose uses a read-only container filesystem, temporary runtime storage, and a localhost-only port binding. For access from another machine, put it behind an HTTPS reverse proxy.
-
-No model weights are bundled in the image. Local environment files, downloaded `*.local` folders, logs, and Git history are excluded from the Docker build context.
-
-To use a runtime mirror, set `VITE_RUNTIME_BASE_URL` to a trailing-slash URL that serves the exact Wasm filenames expected by the installed WebLLM configuration. The host must permit browser access. This changes the runtime location, not the Hugging Face weight sources.
-
-For Node/Vite builds, put the value in ignored `.env.local` and rebuild. For Docker:
-
-```sh
-VITE_RUNTIME_BASE_URL=https://your-runtime-host.example/ docker compose build
-docker compose up -d --wait
-```
-
-This is public, build-time client configuration. Do not put credentials in it. Docker does not copy local runtime folders into the image; the mirror must already be reachable separately.
-
-## Development and verification
+## Development
 
 ```sh
 npm ci
@@ -216,47 +246,41 @@ npm run test:e2e
 npm audit --omit=dev
 ```
 
-Run `npm run format` to apply formatting. Browser tests start their own production preview on port 4175; build first. Use `E2E_PORT` to change that port or `E2E_CHANNEL=chrome` to use installed Chrome.
+Browser tests start a temporary production preview on port `4175`. Override it with `E2E_PORT`, or use installed Chrome with `E2E_CHANNEL=chrome`.
 
-The default suite covers UI behavior, cache updates, storage, model deletion, keyboard controls, and layout stability. Inference tests use a controlled worker fixture. They do not establish real GPU compatibility, inference speed, or model quality.
+Default inference tests use a controlled worker fixture. They verify application behavior, not real-device GPU compatibility or model quality.
 
-For the opt-in real-model test:
+To run the opt-in real-model test:
 
 ```sh
 npm run build
 RUN_MODEL=1 E2E_CHANNEL=chrome npx playwright test e2e/model.spec.ts
 ```
 
-This downloads the default model and requires a usable WebGPU adapter in the automated browser. See [`docs/evaluation.md`](docs/evaluation.md) for output collection and quality review using [`docs/evaluation-cases.json`](docs/evaluation-cases.json).
+This downloads a model and requires WebGPU in the automated browser.
 
-### App icons
+See [`docs/evaluation.md`](docs/evaluation.md) for model-output evaluation.
 
-The favicon and home-screen icons share the vector source in `public/icons/locai.svg`.
-After editing it, regenerate the PNG variants with:
+### Project structure
 
-```sh
-node scripts/generate-icons.mjs
-# Or use installed Chrome:
-ICON_BROWSER_CHANNEL=chrome node scripts/generate-icons.mjs
-```
+| Area | Files |
+| --- | --- |
+| Chat workspace | `src/App.tsx`, `src/ConversationSidebar.tsx` |
+| Model selection | `src/ModelPicker.tsx`, `src/models.ts` |
+| Inference and lifecycle | `src/inference.ts`, `src/inference.worker.ts`, `src/useWriter.ts` |
+| Persona and context | `src/persona.ts`, `src/prompts.ts` |
+| Conversations and storage | `src/conversations.ts`, `src/storage.ts` |
+| Search | `src/search.ts`, `docker/searxng/settings.yml` |
+| Mobile notice | `src/MobileNotice.tsx` |
+| Offline app caching | `src/offline.ts`, `vite.config.ts` |
+| Tests | `src/*.test.*`, `e2e/` |
 
-### Code map
+## Limitations
 
-| Area                                  | Main files                                                                                                     |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Chat workspace and model UI           | `src/app/App.tsx`, `src/features/chat/ConversationSidebar.tsx`, `src/features/models/ModelPicker.tsx`          |
-| Model catalog and inference worker    | `src/features/models/models.ts`, `src/features/models/inference.ts`, `src/features/models/inference.worker.ts` |
-| Loading, generation, and cancellation | `src/features/models/useWriter.ts`                                                                             |
-| Prompts, writing actions, and context | `src/features/prompts/prompts.ts`, `src/features/writing/actions.ts`                                           |
-| Conversation storage and attachments  | `src/features/chat/conversations.ts`, `src/features/chat/storage.ts`                                           |
-| Web search and source handling        | `src/features/search/search.ts`, `docker/searxng/settings.yml`, `docker/nginx.conf`                            |
-| Offline app registration and caching  | `src/platform/offline.ts`, `vite.config.ts`                                                                    |
-| Unit/component and browser tests      | `src/**/*.test.*`, `e2e/`                                                                                      |
+Locai does not currently support mobile model execution, voice input, account sync, executable artifacts, or full-page browsing.
 
-The app currently has no full-page browsing, voice, executable artifacts, or account sync. Model assets remain on their respective hosts and carry their own terms; this repository is marked `UNLICENSED` in `package.json`.
+Local models can make mistakes. Review important facts, names, numbers, and generated code before using them.
 
-### Locai persona
+## License
 
-The default chat prompt in `src/features/prompts/persona.ts` gives Locai a concise, friendly voice, follows the user's language and requested format, and supports writing tasks directly. It asks for clarification only when needed, preserves facts in edits, admits uncertainty, and treats quoted or attached material as reference data. Web citations are enabled only when search snippets are supplied. It does not claim browser, terminal, or device-control tools.
-
-Design references: [Codex's public base instructions](https://github.com/openai/codex/blob/main/codex-rs/protocol/src/prompts/base_instructions/default.md) for tone and capability boundaries; [Open WebUI's prompt guidance](https://docs.openwebui.com/getting-started/essentials/) for stable system context; [llama.cpp chat templates](https://github.com/ggml-org/llama.cpp/blob/master/common/chat.cpp) for keeping model-specific formatting in the runtime. This is a short, original prompt adapted to Locai's small local models, not a copied coding-agent prompt.
+This repository is currently marked `UNLICENSED`. Downloaded models and runtime assets remain subject to their respective licenses and terms.
