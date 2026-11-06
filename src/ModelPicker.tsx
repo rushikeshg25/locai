@@ -1,3 +1,4 @@
+import { useDismissibleDetails } from "./useDismissibleDetails";
 import { LoadingStatus } from "./LoadingStatus";
 import { Button } from "./Button";
 import { useEffect, useRef, useState } from "react";
@@ -53,33 +54,16 @@ export function ModelPicker({
     ).then((entries) => {
       if (alive) setCache(Object.fromEntries(entries));
     });
-    if (status === "ready" && picker.current) picker.current.open = false;
+    if (status === "ready" && picker.current?.open) {
+      const restoreFocus = picker.current.contains(document.activeElement);
+      picker.current.open = false;
+      if (restoreFocus) picker.current.querySelector("summary")?.focus();
+    }
     return () => {
       alive = false;
     };
   }, [writer, status, model]);
-  useEffect(() => {
-    const outside = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !picker.current?.contains(event.target) &&
-        picker.current
-      )
-        picker.current.open = false;
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && picker.current?.open) {
-        picker.current.open = false;
-        picker.current.querySelector("summary")?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", outside);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", outside);
-      document.removeEventListener("keydown", escape);
-    };
-  }, []);
+  useDismissibleDetails(picker);
   return (
     <details className="model-settings" ref={picker}>
       <summary
@@ -98,10 +82,22 @@ export function ModelPicker({
           {models.find((item) => item.id === model)?.label.split(" · ")[1] ??
             model}
         </span>
-        <span aria-hidden="true">⌄</span>
+        <Icon name="chevron" />
       </summary>
       <section className="model-panel" aria-label="Model setup">
-        <h2>Models</h2>
+        <div className="panel-heading">
+          <h2>Models</h2>
+          <Button
+            className="secondary icon-button"
+            aria-label="Close models"
+            onClick={() => {
+              if (picker.current) picker.current.open = false;
+              picker.current?.querySelector("summary")?.focus();
+            }}
+          >
+            <Icon name="close" />
+          </Button>
+        </div>
         {required && status !== "ready" && status !== "loading" && (
           <p role="alert" className="model-required">
             Load a model before sending. Your draft is kept.

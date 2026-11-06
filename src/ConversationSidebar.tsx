@@ -60,6 +60,7 @@ export function ConversationSidebar({
         <Button
           className="icon-button secondary"
           aria-label="Collapse chats"
+          title="Collapse chats"
           onClick={() => onOpen?.(false)}
         >
           <Icon name="sidebar" />

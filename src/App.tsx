@@ -1,3 +1,4 @@
+import { useDismissibleDetails } from "./useDismissibleDetails";
 import { searchWeb, fitSearch } from "./search";
 import type { WritingRequest } from "./prompts";
 import { ConversationSidebar } from "./ConversationSidebar";
@@ -55,38 +56,10 @@ export default function App({
   );
   const chatMenu = useRef<HTMLDetailsElement>(null);
   const writingTools = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    const dismiss = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        writingTools.current &&
-        !writingTools.current.contains(event.target)
-      )
-        writingTools.current.open = false;
-      if (
-        event.target instanceof Node &&
-        !chatMenu.current?.contains(event.target) &&
-        chatMenu.current
-      )
-        chatMenu.current.open = false;
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && writingTools.current?.open) {
-        writingTools.current.open = false;
-        writingTools.current.querySelector("summary")?.focus();
-      }
-      if (event.key === "Escape" && chatMenu.current?.open) {
-        chatMenu.current.open = false;
-        chatMenu.current.querySelector("summary")?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", dismiss);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", dismiss);
-      document.removeEventListener("keydown", escape);
-    };
-  }, []);
+  const contextMenu = useRef<HTMLDetailsElement>(null);
+  useDismissibleDetails(chatMenu);
+  useDismissibleDetails(writingTools);
+  useDismissibleDetails(contextMenu);
   const [browserWriter] = useState(() => supplied ?? new LocalWriter());
   const writer = browserWriter;
   const [autoLoad, setAutoLoad] = useState(
@@ -450,6 +423,16 @@ export default function App({
   }
   return (
     <div className={`app-shell ${sidebarOpen ? "sidebar-open" : ""}`}>
+      <a
+        className="skip-link"
+        href="#source"
+        onClick={(event) => {
+          event.preventDefault();
+          composer.current?.focus();
+        }}
+      >
+        Skip to message
+      </a>
       <ConversationSidebar
         chats={chats}
         active={chat.id}
@@ -470,7 +453,10 @@ export default function App({
             >
               <Icon name="sidebar" />
             </Button>
-            <h1>Locai</h1>
+            <h1 className="app-brand">
+              <img src="/icons/locai.svg" width="24" height="24" alt="" />
+              Locai
+            </h1>
           </div>
           <div className="header-tools">
             <Button
@@ -928,9 +914,23 @@ export default function App({
                 <summary aria-label="Writing tools">
                   <Icon name={action} />
                   <span>{actions[action].label}</span>
-                  <span aria-hidden="true">⌄</span>
+                  <Icon name="chevron" />
                 </summary>
                 <div className="writing-tools-panel">
+                  <div className="panel-heading">
+                    <h2>Writing tools</h2>
+                    <Button
+                      className="secondary icon-button"
+                      aria-label="Close writing tools"
+                      onClick={() => {
+                        if (writingTools.current)
+                          writingTools.current.open = false;
+                        writingTools.current?.querySelector("summary")?.focus();
+                      }}
+                    >
+                      <Icon name="close" />
+                    </Button>
+                  </div>
                   <div
                     className="actions"
                     role="group"
@@ -993,6 +993,23 @@ export default function App({
                       />
                     </label>
                   </details>
+                </div>
+              </details>
+            )}
+            {contextLabel && (
+              <details className="context-budget" ref={contextMenu}>
+                <summary
+                  aria-label="Context budget"
+                  title="Message context budget"
+                >
+                  <Icon name="info" />
+                </summary>
+                <div className="context-budget-panel">
+                  <p>{contextLabel}</p>
+                  <p>
+                    A conservative UTF-8 byte estimate, not an exact token
+                    count. Space is reserved for the reply.
+                  </p>
                 </div>
               </details>
             )}
@@ -1196,16 +1213,6 @@ export default function App({
             <p role="status" className="feedback transient-notice">
               {session.error || feedback || session.notice}
             </p>
-          )}
-          {contextLabel && (
-            <details className="context-budget">
-              <summary>Context budget</summary>
-              <p>{contextLabel}</p>
-              <p>
-                A conservative UTF-8 byte estimate, not an exact token count.
-                Space is reserved for the reply.
-              </p>
-            </details>
           )}
           {text && inputError(text) && (
             <p role="alert" className="transient-notice">

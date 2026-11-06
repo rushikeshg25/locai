@@ -88,7 +88,7 @@ New chat keeps the loaded model. Stop preserves partial output and normally leav
 | Escape                     | Close an open model picker, chat menu, or mobile drawer                  |
 | Tab / Shift+Tab            | Move between controls                                                    |
 
-IME composition does not submit a message. Icon controls have accessible labels; model progress and feedback use live status messages. Reply animation respects reduced-motion preferences.
+IME composition does not submit a message. Icon controls have accessible labels; model progress and feedback use live status messages. Keyboard users can skip directly to the composer. Menus close when focus leaves them, and Escape or their Close button returns focus to the trigger. Reply animation respects reduced-motion preferences.
 
 ### Writing controls and limits
 
@@ -100,7 +100,7 @@ In Write mode, open the writing-tools dropdown beside Chat/Write to choose an ac
 | Attachments              | Up to 3 UTF-8 `.txt`, `.md`, or `.markdown` files |
 | Combined attachment size | 24,000 bytes                                      |
 
-The model context budget can impose a smaller limit. Older turns may be excluded to fit; an oversized newest request is rejected rather than silently truncated. **Context budget** shows a conservative byte-based estimate, not an exact token count.
+The model context budget can impose a smaller limit. Older turns may be excluded to fit; an oversized newest request is rejected rather than silently truncated. The **Context budget** info control beside Chat/Write shows a conservative byte-based estimate, not an exact token count.
 
 ## Web search
 

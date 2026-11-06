@@ -1,4 +1,5 @@
 const paths = {
+  chevron: "m7 10 5 5 5-5",
   search: "M21 21l-6-6 M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0",
   sidebar: "M3 4h18v16H3z M9 4v16",
   branch:
