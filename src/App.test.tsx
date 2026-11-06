@@ -192,21 +192,21 @@ it("saves only after opt-in, restores saved history and can make it temporary", 
     ),
   ).toHaveLength(0);
 });
-it("turns selected draft text into a focused writing request", async () => {
+it("keeps draft selection local without changing the request mode", async () => {
   const writer = setup();
   await ready();
   const input = screen.getByLabelText("Your text") as HTMLTextAreaElement;
   fireEvent.change(input, { target: { value: "Keep this. Fix these." } });
   input.setSelectionRange(11, 21);
   fireEvent.select(input);
-  fireEvent.click(
-    screen.getByRole("button", { name: "Rewrite selected text" }),
-  );
-  expect(input).toHaveValue("Fix these.");
+  expect(
+    screen.queryByRole("button", { name: "Cite" }),
+  ).not.toBeInTheDocument();
+  expect(input).toHaveValue("Keep this. Fix these.");
   fireEvent.click(screen.getByRole("button", { name: "Send message" }));
   await waitFor(() =>
     expect(writer.generate).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: "write", text: "Fix these." }),
+      expect.objectContaining({ mode: "chat", text: "Keep this. Fix these." }),
       expect.any(Function),
     ),
   );

@@ -1,3 +1,4 @@
+import { SelectionCitation } from "./SelectionCitation";
 import { useDismissibleDetails } from "./useDismissibleDetails";
 import { searchWeb, fitSearch } from "./search";
 import type { WritingRequest } from "./prompts";
@@ -105,7 +106,6 @@ export default function App({
     },
     [],
   );
-  const [selection, setSelection] = useState("");
   const files = useRef<HTMLInputElement>(null);
   const persistFailures = useRef(new Set<string>());
   useEffect(() => {
@@ -148,8 +148,6 @@ export default function App({
       }
     }
   }, [chats]);
-  const [edit, setEdit] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
   const [resend, setResend] = useState<Message[] | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null);
   const scroll = useRef<HTMLDivElement>(null);
@@ -248,10 +246,9 @@ export default function App({
     setActive(next.id);
     setText("");
     replaceAttachments([]);
-    setSelection("");
     setResend(null);
     setFeedback("");
-    setEdit(null);
+
     nearBottom.current = true;
     setLatest(false);
   }
@@ -259,9 +256,8 @@ export default function App({
     setActive(id);
     setText("");
     replaceAttachments([]);
-    setSelection("");
     setResend(null);
-    setEdit(null);
+
     nearBottom.current = true;
     setLatest(false);
   }
@@ -359,7 +355,6 @@ export default function App({
       }));
     setText("");
     replaceAttachments([]);
-    setSelection("");
     setResend(null);
     setFeedback("");
     nearBottom.current = true;
@@ -599,16 +594,6 @@ export default function App({
           tabIndex={0}
           aria-label="Chat messages"
           ref={scroll}
-          onMouseUp={() => {
-            const selected = window.getSelection();
-            setSelection(
-              selected &&
-                scroll.current?.contains(selected.anchorNode) &&
-                scroll.current?.contains(selected.focusNode)
-                ? selected.toString()
-                : "",
-            );
-          }}
           onScroll={() => {
             const el = scroll.current!;
             nearBottom.current =
@@ -666,35 +651,18 @@ export default function App({
                       the output limit or been interrupted.
                     </p>
                   )}
-                {edit === message.id ? (
-                  <div className="result-editor">
-                    <textarea
-                      aria-label="Edit result"
-                      value={editText}
-                      onChange={(event) => setEditText(event.target.value)}
-                    />
-                    <Button
-                      onClick={() => {
-                        patch(chat.id, message.id, { content: editText });
-                        setEdit(null);
-                      }}
-                    >
-                      Save edit
-                    </Button>
-                    <Button className="secondary" onClick={() => setEdit(null)}>
-                      Cancel
-                    </Button>
-                  </div>
-                ) : message.role === "user" ? (
-                  <p className="user-text">{message.content}</p>
-                ) : (
-                  message.content && (
-                    <Markdown
-                      text={message.content}
-                      sources={message.webSources}
-                    />
-                  )
-                )}
+                <div className="message-content">
+                  {message.role === "user" ? (
+                    <p className="user-text">{message.content}</p>
+                  ) : (
+                    message.content && (
+                      <Markdown
+                        text={message.content}
+                        sources={message.webSources}
+                      />
+                    )
+                  )}
+                </div>
                 {message.attachments?.map((file, index) => (
                   <details className="attachment-preview" key={index}>
                     <summary>{file.name}</summary>
@@ -838,25 +806,13 @@ export default function App({
                           setText("");
                           replaceAttachments([]);
                           setResend(null);
-                          setEdit(null);
+
                           nearBottom.current = true;
                           setLatest(false);
                         }}
                       >
                         <Icon name="branch" />
                         Branch
-                      </Button>
-                      <Button
-                        className="secondary"
-                        disabled={busy || !message.content}
-                        title="Edit this response"
-                        onClick={() => {
-                          setEdit(message.id);
-                          setEditText(message.content);
-                        }}
-                      >
-                        <Icon name="edit" />
-                        Edit result
                       </Button>
                       <Button
                         className="secondary"
@@ -917,23 +873,22 @@ export default function App({
             ↓ Jump to latest
           </Button>
         )}
+        <SelectionCitation
+          container={scroll}
+          disabled={busy}
+          conversation={chat.id}
+          onCite={(quote) => {
+            setText(
+              (draft) =>
+                `${draft}${draft.trim() ? "\n\n" : ""}${quote
+                  .split("\n")
+                  .map((line) => `> ${line}`)
+                  .join("\n")}\n\n`,
+            );
+            composer.current?.focus();
+          }}
+        />
         <section className="compose-area" aria-label="Message composer">
-          {selection.trim() && (
-            <Button
-              className="secondary"
-              disabled={busy}
-              onClick={() => {
-                setText(selection);
-                replaceAttachments([]);
-                setSelection("");
-                setResend(null);
-                update(chat.id, (item) => ({ ...item, mode: "write" }));
-                composer.current?.focus();
-              }}
-            >
-              Rewrite selected text
-            </Button>
-          )}
           <div className="compose-options">
             <div className="mode-switch" role="group" aria-label="Mode">
               {(["chat", "write"] as const).map((mode) => (
@@ -1049,13 +1004,6 @@ export default function App({
               disabled={busy}
               onChange={(event) => {
                 setText(event.target.value);
-                setSelection("");
-              }}
-              onSelect={(event) => {
-                const el = event.currentTarget;
-                setSelection(
-                  el.value.slice(el.selectionStart, el.selectionEnd),
-                );
               }}
               onKeyDown={(event) => {
                 if (
@@ -1069,7 +1017,6 @@ export default function App({
                   const start = input.selectionStart;
                   const end = input.selectionEnd;
                   setText(text.slice(0, start) + "\n" + text.slice(end));
-                  setSelection("");
                   requestAnimationFrame(() =>
                     input.setSelectionRange(start + 1, start + 1),
                   );

@@ -570,12 +570,6 @@ ins {
 del {
   background: #cc405333;
 }
-.result-editor button {
-  margin: 7px 6px 0 0;
-}
-.result-editor textarea {
-  min-height: 150px;
-}
 .info-dialog {
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -1483,4 +1477,14 @@ input[type="radio"] {
   font-size: 10px;
   vertical-align: 1px;
   white-space: nowrap;
+}
+
+.selection-cite {
+  position: fixed;
+  z-index: 100;
+  min-height: 44px;
+  min-width: 80px;
+  padding: 8px 12px;
+  gap: 6px;
+  box-shadow: 0 4px 16px #0003;
 }
