@@ -845,6 +845,8 @@ export default function App({
             <textarea
               ref={composer}
               id="source"
+              aria-describedby="composer-shortcuts"
+              aria-keyshortcuts="Enter Control+Enter Shift+Enter"
               rows={2}
               value={text}
               disabled={busy}
@@ -861,6 +863,24 @@ export default function App({
               onKeyDown={(event) => {
                 if (
                   event.key === "Enter" &&
+                  !event.nativeEvent.isComposing &&
+                  event.keyCode !== 229 &&
+                  (event.ctrlKey || event.metaKey)
+                ) {
+                  event.preventDefault();
+                  const input = event.currentTarget;
+                  const start = input.selectionStart;
+                  const end = input.selectionEnd;
+                  setText(text.slice(0, start) + "\n" + text.slice(end));
+                  setSelection("");
+                  requestAnimationFrame(() =>
+                    input.setSelectionRange(start + 1, start + 1),
+                  );
+                  return;
+                }
+                if (
+                  event.key === "Enter" &&
+                  !event.altKey &&
                   !event.shiftKey &&
                   !event.nativeEvent.isComposing &&
                   event.keyCode !== 229
@@ -928,8 +948,8 @@ export default function App({
               >
                 <Icon name="attach" />
               </Button>
-              <span className="muted keyboard-hint">
-                Shift + Enter for a new line
+              <span id="composer-shortcuts" className="muted keyboard-hint">
+                Enter to send · Ctrl/⌘ + Enter or Shift + Enter for a new line
               </span>
               <div className="run-bar">
                 <ModelPicker

@@ -44,7 +44,7 @@ This value is public client configuration, not a secret. Changing it requires re
 - In Write mode, **Writing preferences** accepts protected terms and a custom instruction. Missing protected terms are flagged; retries and edit/resend retain the original preferences. Preferences are stored with the request only when you save its conversation.
 - The desktop sidebar searches conversation titles and messages. On narrow screens, use the Conversation selector.
 - **Chat** is the default. Completed turns provide context for follow-up questions. **Write** offers ten editing actions, with original/revised word-level comparison.
-- Enter sends; Shift+Enter inserts a newline. The composer grows with the draft and respects IME composition.
+- Enter sends; Ctrl+Enter (⌘+Enter on Mac) or Shift+Enter inserts a newline. The composer grows with the draft and respects IME composition.
 - Replies render Markdown, tables and code with a copy button. Generated HTML is disabled and remote images are not fetched.
 - Copy, edit a reply, reuse it as input, or branch from it. Retry and edit/resend create branches and preserve the original conversation. Each reply identifies its model.
 - New chat keeps the loaded model. Stop preserves partial output and normally keeps the model ready. If cancellation stalls, the worker is unloaded after five seconds.
