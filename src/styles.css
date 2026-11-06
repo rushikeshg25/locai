@@ -821,12 +821,16 @@ del {
 }
 .new-chat {
   color: #18181b;
-  background: #fff;
-  border: 1px solid #d4d4d8;
-  border-radius: 8px;
+  background: radial-gradient(circle, #fff 14px, transparent 14.5px);
+  border: 0;
+  border-radius: 50%;
+}
+.new-chat .icon {
+  width: 16px;
+  height: 16px;
 }
 .new-chat:hover {
-  background: #eee;
+  background: radial-gradient(circle, #eee 14px, transparent 14.5px);
 }
 .sidebar-section-label {
   margin: 24px 12px 8px;
