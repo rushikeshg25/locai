@@ -18,6 +18,11 @@ test("chats save automatically, survive reopening, and can be deleted or tempora
   const reopened = await context.newPage();
   await installBrowserModel(reopened);
   await reopened.goto("/");
+  await expect(reopened.locator(".message")).toHaveCount(0);
+  await expect(reopened.getByLabel("Your text")).toHaveValue("");
+  await reopened
+    .getByRole("button", { name: "Open chat: Remember this conversation" })
+    .click();
   await expect(reopened.locator(".user-text")).toHaveText(
     "Remember this conversation",
   );
@@ -62,6 +67,10 @@ test("refresh during generation restores the partial reply as stopped", async ({
     { timeout: 15000 },
   );
   await page.reload();
+  await expect(page.locator(".message")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Open chat: A long answer please" })
+    .click();
   await expect(page.locator(".user-text")).toHaveText("A long answer please");
   await expect(page.locator(".assistant .markdown")).toHaveText(
     "Partial answer",

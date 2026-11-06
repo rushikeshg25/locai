@@ -314,6 +314,9 @@ it("keeps legacy retry metadata without exposing writing preference fields", asy
   ];
   saveChat(chat);
   const writer = setup();
+  fireEvent.click(
+    screen.getByRole("button", { name: `Open chat: ${chat.title}` }),
+  );
   await ready();
   fireEvent.click(
     screen.getByRole("button", { name: "Open chat: Legacy draft" }),
@@ -524,4 +527,36 @@ it("selecting a model loads it, retries failures, and switches without load cont
       name: /Unload|Download model|Load from device/,
     }),
   ).not.toBeInTheDocument();
+});
+it("opens a fresh chat without overwriting or duplicating saved conversations", () => {
+  const previous = {
+    ...newConversation(),
+    title: "Saved conversation",
+    messages: [
+      { id: "u", role: "user" as const, content: "Keep this history" },
+    ],
+  };
+  saveChat(previous);
+  const before = localStorage.getItem(`local-writer-chat-v1:${previous.id}`);
+  for (let i = 0; i < 2; i++) {
+    setup();
+    expect(
+      screen.getByRole("button", { name: "Open chat: New chat" }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(document.querySelectorAll(".message")).toHaveLength(0);
+    expect(screen.getByLabelText("Your text")).toHaveValue("");
+    expect(localStorage.getItem(`local-writer-chat-v1:${previous.id}`)).toBe(
+      before,
+    );
+    expect(
+      Object.keys(localStorage).filter((key) =>
+        key.startsWith("local-writer-chat-v1:"),
+      ),
+    ).toHaveLength(1);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open chat: Saved conversation" }),
+    );
+    expect(screen.getByText("Keep this history")).toBeInTheDocument();
+    cleanup();
+  }
 });

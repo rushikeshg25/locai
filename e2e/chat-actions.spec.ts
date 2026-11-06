@@ -68,7 +68,7 @@ test("chat actions persist names and pins, and delete only the targeted chat", a
   await expect(row).toHaveCount(0);
   await expect(page.getByLabel("Your text")).toHaveValue("Keep my draft");
   await page.reload();
-  await expect(page.locator(".chat-row")).toHaveCount(1);
+  await expect(page.locator(".chat-row")).toHaveCount(2);
 });
 
 test("chat menu works in the mobile drawer without overflow", async ({

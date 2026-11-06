@@ -54,7 +54,7 @@ test("chat context, Markdown, attachments, branching and automatic persistence",
     page
       .getByRole("navigation", { name: "Conversations" })
       .getByRole("button", { name: /^Open chat:/ }),
-  ).toHaveCount(2);
+  ).toHaveCount(3);
   await page
     .getByRole("navigation", { name: "Conversations" })
     .getByRole("button", { name: /^Open chat:/ })
@@ -68,7 +68,7 @@ test("chat context, Markdown, attachments, branching and automatic persistence",
     page
       .getByRole("navigation", { name: "Conversations" })
       .getByRole("button", { name: /^Open chat:/ }),
-  ).toHaveCount(1);
+  ).toHaveCount(2);
 });
 test("light/dark composer and narrow layout remain usable", async ({
   page,

@@ -75,9 +75,10 @@ export default function App({
   const [supported, setSupported] = useState<boolean | null>(null);
   const [model, setModel] = useState<string>(preferredModel);
   const [saved] = useState(readSaved);
-  const [chats, setChats] = useState<Conversation[]>(() =>
-    saved.chats.length ? saved.chats : [newConversation()],
-  );
+  const [chats, setChats] = useState<Conversation[]>(() => [
+    newConversation(),
+    ...saved.chats,
+  ]);
   const [active, setActive] = useState("");
   const chat = chats.find((item) => item.id === active) ?? chats[0];
   const [text, setText] = useState("");

@@ -27,6 +27,9 @@ test("generated first-message title appears in history and persists on reload", 
     "Here is a plan.",
   );
   await page.reload();
+  await page
+    .getByRole("button", { name: "Open chat: Weekend trip planning" })
+    .click();
   await expect(
     page.getByRole("button", { name: "Open chat: Weekend trip planning" }),
   ).toBeVisible();
