@@ -7,6 +7,9 @@ export interface Attachment {
 }
 export interface Message {
   id: string;
+  reasoning?: string;
+  reasoningEnabled?: boolean;
+  thinking?: boolean;
   webSearch?: boolean;
   webSources?: WebSource[];
   searchQuery?: string;
@@ -62,7 +65,8 @@ export function conversationHistory(messages: Message[]) {
     if (
       user.role === "user" &&
       reply.role === "assistant" &&
-      reply.state === "complete"
+      reply.state === "complete" &&
+      !!reply.content.trim()
     ) {
       history.push(
         { role: "user", content: messageText(user) },

@@ -113,3 +113,46 @@ it("uses the runtime override for cache checks and removal too", async () => {
   expect(runtime.cached).toHaveBeenCalledWith("model", config);
   expect(runtime.remove).toHaveBeenCalledWith("model", config);
 });
+
+it("uses native thinking only on supported chat models and disables it for writing", async () => {
+  vi.stubGlobal("Worker", FakeWorker);
+  const create = vi.fn().mockImplementation(async function* () {
+    yield {
+      choices: [{ delta: { content: "Answer" }, finish_reason: "stop" }],
+    };
+  });
+  runtime.create.mockResolvedValue({ chat: { completions: { create } } });
+  const writer = new LocalWriter();
+  const request = {
+    text: "Question",
+    action: "grammar" as const,
+    terms: "",
+    instruction: "",
+    mode: "chat" as const,
+    reasoning: true,
+  };
+  await writer.load("Qwen3-0.6B-q4f16_1-MLC", vi.fn());
+  await writer.generate(request, vi.fn());
+  expect(create).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      extra_body: { enable_thinking: true },
+      max_tokens: 2048,
+      temperature: 0.6,
+    }),
+  );
+  await writer.generate({ ...request, reasoning: false }, vi.fn());
+  expect(create).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      extra_body: { enable_thinking: false },
+      max_tokens: 1200,
+    }),
+  );
+  await writer.generate({ ...request, mode: "write" }, vi.fn());
+  expect(create).toHaveBeenLastCalledWith(
+    expect.objectContaining({ extra_body: { enable_thinking: false } }),
+  );
+  await writer.load("model", vi.fn());
+  await writer.generate(request, vi.fn());
+  expect(create.mock.calls.at(-1)![0]).not.toHaveProperty("extra_body");
+  writer.dispose();
+});

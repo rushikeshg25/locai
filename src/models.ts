@@ -35,7 +35,16 @@ export const models = [
     download: "~2.15 GB weights",
     memory: "~3.7 GB GPU memory",
   },
+  {
+    id: "Qwen3-0.6B-q4f16_1-MLC",
+    label: "Reasoning · Qwen 3 0.6B",
+    download: "~335 MB weights",
+    memory: "~1.4 GB GPU memory",
+  },
 ] as const;
+export function supportsReasoning(model: string) {
+  return model === "Qwen3-0.6B-q4f16_1-MLC";
+}
 export async function checkGPU(): Promise<boolean> {
   const gpu = (
     navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }

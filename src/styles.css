@@ -1482,3 +1482,27 @@ input[type="radio"] {
     transition: none !important;
   }
 }
+
+.reasoning-block {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  color: var(--muted);
+  font-size: 13px;
+}
+.reasoning-block summary {
+  min-height: 24px;
+}
+.reasoning-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 12px;
+  line-height: 1.7;
+}
+.reasoning-setting small {
+  display: block;
+  margin-left: 24px;
+}

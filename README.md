@@ -102,6 +102,18 @@ In Write mode, open the writing-tools dropdown beside Chat/Write to choose an ac
 
 The model context budget can impose a smaller limit. Older turns may be excluded to fit; an oversized newest request is rejected rather than silently truncated. The **Context budget** info control beside Chat/Write shows a conservative byte-based estimate, not an exact token count.
 
+## Reasoning
+
+Select **Reasoning · Qwen 3 0.6B** in Models and download/load it. Its **Reasoning** checkbox controls native thinking for Chat mode and is enabled by default. Existing models keep their current behavior. Write mode always disables thinking.
+
+While the model works, a collapsed **Thinking** section holds its intermediate text. The final answer appears separately. Thinking is model-generated text, not a verified explanation or a guarantee of correctness. Reasoning can take longer, and a small model can still make mistakes.
+
+The setting is saved on this browser. Saved conversations retain thinking text; Markdown exports label it separately. Copy, reuse, and subsequent chat requests use only the final answer. Stop preserves partial thinking. If generation ends before an answer, the app says so rather than displaying the reasoning as an answer.
+
+Reasoning shares the model's 4,096-token context. It reserves up to 2,048 output tokens (versus 1,200 normally), leaving less room for questions, history, and web snippets. The existing two-minute generation timeout still applies. The model can reach either limit before producing a final answer.
+
+This uses WebLLM's native `extra_body.enable_thinking` option for [Qwen3](https://huggingface.co/Qwen/Qwen3-0.6B), not a prompt that asks an unsupported model to pretend to reason.
+
 ## Web search
 
 Turn on **Web** beside the attachment button before sending a chat message. Locai searches the current question, shows search progress, and passes up to four result snippets to the local model. Numbered citations open source links; **Sources** lists the actual results used. Stop cancels a pending search. Failed searches show an error and can be retried.
@@ -118,14 +130,15 @@ Engines and timeouts are configured in `docker/searxng/settings.yml`. Search req
 
 All listed models use WebLLM-compatible quantized weights. Qwen 2.5 0.5B is the default because its download is small; it is not a measured quality winner.
 
-| Model         | Approximate weights | Estimated GPU memory |
-| ------------- | ------------------- | -------------------- |
-| Qwen 2.5 0.5B | 280 MB              | 945 MB               |
-| Qwen 2.5 1.5B | 870 MB              | 1.6 GB               |
-| Llama 3.2 1B  | 695 MB              | 880 MB               |
-| Llama 3.2 3B  | 1.81 GB             | 2.3 GB               |
-| Qwen 2.5 3B   | 1.74 GB             | 2.5 GB               |
-| Phi 3.5 Mini  | 2.15 GB             | 3.7 GB               |
+| Model                   | Approximate weights | Estimated GPU memory |
+| ----------------------- | ------------------- | -------------------- |
+| Qwen 2.5 0.5B           | 280 MB              | 945 MB               |
+| Qwen 2.5 1.5B           | 870 MB              | 1.6 GB               |
+| Llama 3.2 1B            | 695 MB              | 880 MB               |
+| Llama 3.2 3B            | 1.81 GB             | 2.3 GB               |
+| Qwen 2.5 3B             | 1.74 GB             | 2.5 GB               |
+| Phi 3.5 Mini            | 2.15 GB             | 3.7 GB               |
+| Qwen 3 0.6B (reasoning) | 335 MB              | 1.4 GB               |
 
 These are estimates, not device compatibility guarantees. Runtime, tokenizer, browser, and cache overhead are additional. The model IDs and displayed estimates are defined in [`src/models.ts`](src/models.ts); runtime configuration comes from the installed WebLLM registry.
 

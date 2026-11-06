@@ -97,7 +97,7 @@ test("expanded model catalog keeps actions separated and reachable", async ({
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.getByLabel("Models", { exact: true }).click();
-    await expect(page.getByRole("radio")).toHaveCount(6);
+    await expect(page.getByRole("radio")).toHaveCount(7);
     await page.getByRole("radio", { name: /Phi 3.5 Mini/ }).check();
     await expect(
       page.getByRole("radio", { name: /Phi 3.5 Mini/ }),

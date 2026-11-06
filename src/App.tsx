@@ -19,7 +19,8 @@ import {
   type Action,
 } from "./actions";
 import { LocalWriter, type Writer } from "./inference";
-import { checkGPU, models } from "./models";
+import { splitReasoning } from "./reasoning";
+import { checkGPU, models, supportsReasoning } from "./models";
 import { ChangeReview } from "./ChangeReview";
 import { Icon } from "./Icon";
 import { useWriter } from "./useWriter";
@@ -68,6 +69,9 @@ export default function App({
   const autoAttempted = useRef(false);
   const session = useWriter(writer);
   const [webSearch, setWebSearch] = useState(false);
+  const [reasoningEnabled, setReasoningEnabled] = useState(
+    () => getPreference("reasoning", "true") === "true",
+  );
   const [searching, setSearching] = useState<string | null>(null);
   const searchController = useRef<AbortController | null>(null);
   useEffect(() => () => searchController.current?.abort(), []);
@@ -273,6 +277,7 @@ export default function App({
     requestTerms = terms,
     requestInstruction = instruction,
     useSearch = webSearch && requestMode === "chat",
+    useReasoning = reasoningEnabled,
   ) {
     if (busy || searchController.current) return;
     if (session.status !== "ready") {
@@ -291,7 +296,10 @@ export default function App({
       setFeedback(error);
       return;
     }
+    const reasoning =
+      supportsReasoning(selected.id) && requestMode === "chat" && useReasoning;
     let request: WritingRequest = {
+      reasoning,
       text: messageText({ content: source, attachments: attached }),
       mode: requestMode,
       action: requestAction,
@@ -311,6 +319,7 @@ export default function App({
       id: crypto.randomUUID(),
       role: "user",
       webSearch: useSearch,
+      reasoningEnabled: reasoning,
       content: source,
       attachments: attached,
       mode: requestMode,
@@ -322,6 +331,7 @@ export default function App({
       id: crypto.randomUUID(),
       role: "assistant",
       webSearch: useSearch,
+      reasoningEnabled: reasoning,
       content: "",
       state: "streaming",
       model: selected.id,
@@ -387,11 +397,13 @@ export default function App({
         }
       }
     }
+    const parse = (content: string) =>
+      supportsReasoning(selected.id) ? splitReasoning(content) : { content };
     const result = await session.run(request, (content) =>
-      patch(id, answer.id, { content }),
+      patch(id, answer.id, parse(content)),
     );
     patch(id, answer.id, {
-      content: result.text,
+      ...parse(result.text),
       state: result.state,
       truncated: result.truncated,
     });
@@ -400,6 +412,10 @@ export default function App({
   if (text.trim()) {
     try {
       const budget = prepareMessages({
+        reasoning:
+          reasoningEnabled &&
+          supportsReasoning(selected.id) &&
+          chat.mode === "chat",
         text: messageText({ content: text, attachments }),
         mode: chat.mode,
         action,
@@ -626,6 +642,30 @@ export default function App({
                     <small>{actions[message.action ?? "grammar"].label}</small>
                   )}
                 </div>
+                {message.role === "assistant" &&
+                  (message.reasoning || message.thinking) && (
+                    <details className="reasoning-block">
+                      <summary>
+                        {message.state === "streaming" && message.thinking
+                          ? "Thinking…"
+                          : message.thinking
+                            ? "Thinking interrupted"
+                            : "Thinking"}
+                      </summary>
+                      <div className="reasoning-text">
+                        {message.reasoning || "Preparing…"}
+                      </div>
+                    </details>
+                  )}
+                {message.role === "assistant" &&
+                  message.reasoning &&
+                  !message.content &&
+                  message.state !== "streaming" && (
+                    <p className="muted">
+                      No final answer was produced. Reasoning may have reached
+                      the output limit or been interrupted.
+                    </p>
+                  )}
                 {edit === message.id ? (
                   <div className="result-editor">
                     <textarea
@@ -778,6 +818,7 @@ export default function App({
                               user.terms ?? "",
                               user.instruction ?? "",
                               user.webSearch ?? false,
+                              user.reasoningEnabled ?? false,
                             );
                         }}
                       >
@@ -1157,6 +1198,13 @@ export default function App({
                   required={modelRequired}
                   supported={supported}
                   autoLoad={autoLoad}
+                  reasoning={reasoningEnabled}
+                  reasoningAllowed={chat.mode === "chat"}
+                  onReasoning={(value) => {
+                    setReasoningEnabled(value);
+                    if (!setPreference("reasoning", String(value)))
+                      setFeedback("Reasoning preference could not be saved.");
+                  }}
                   onAutoLoad={(value) => {
                     setAutoLoad(value);
                     if (!setPreference("auto-load", String(value)))
