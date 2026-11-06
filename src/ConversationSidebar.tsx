@@ -57,29 +57,32 @@ export function ConversationSidebar({
     <>
       <div className="sidebar-heading">
         <h2>Chats</h2>
-        <Button
-          className="icon-button secondary"
-          aria-label="Collapse chats"
-          title="Collapse chats"
-          onClick={() => onOpen?.(false)}
-        >
-          <Icon name="sidebar" />
-        </Button>
+        <div className="sidebar-heading-actions">
+          {onNew && (
+            <Button
+              className="new-chat icon-button"
+              aria-label="New chat"
+              title="New chat"
+              disabled={busy}
+              onClick={() => {
+                setQuery("");
+                onNew();
+                if (mobile) onOpen?.(false);
+              }}
+            >
+              <Icon name="plus" />
+            </Button>
+          )}
+          <Button
+            className="icon-button secondary"
+            aria-label="Collapse chats"
+            title="Collapse chats"
+            onClick={() => onOpen?.(false)}
+          >
+            <Icon name="sidebar" />
+          </Button>
+        </div>
       </div>
-      {onNew && (
-        <Button
-          className="new-chat"
-          disabled={busy}
-          onClick={() => {
-            setQuery("");
-            onNew();
-            if (mobile) onOpen?.(false);
-          }}
-        >
-          <Icon name="edit" />
-          New chat
-        </Button>
-      )}
       <label className="sr-only" htmlFor="chat-search">
         Search conversations
       </label>

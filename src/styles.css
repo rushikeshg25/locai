@@ -824,20 +824,19 @@ del {
   font-size: 14px;
   margin: 0;
 }
+.sidebar-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .new-chat {
-  justify-content: flex-start;
-  color: var(--text);
-  background: transparent;
-  border: 0;
-  padding: 9px 10px;
-  min-height: 38px;
-  font-size: 13px;
-  font-weight: 400;
-  gap: 10px;
+  color: #18181b;
+  background: #fff;
+  border: 1px solid #d4d4d8;
   border-radius: 8px;
 }
 .new-chat:hover {
-  background: var(--soft);
+  background: #eee;
 }
 .sidebar-section-label {
   margin: 24px 12px 8px;
