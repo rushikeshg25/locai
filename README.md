@@ -4,7 +4,7 @@ AI chat that runs in your browser, on your device.
 
 Ask questions, explore ideas, and improve your writing with local language models. No account, API key, or inference server required.
 
-Locai uses **WebGPU** through **WebLLM** to run models locally. Optional web search uses **SearXNG** to bring source snippets into the conversation.
+Locai uses **WebGPU** through **WebLLM** to run models locally. Inference runs locally; live web search is not included.
 
 ## Features
 
@@ -13,7 +13,6 @@ Locai uses **WebGPU** through **WebLLM** to run models locally. Optional web sea
 - **Automatic model loading** when the selected model is already downloaded.
 - **Saved conversations** with generated titles, search, rename, pin, and delete.
 - **A fresh chat on startup**, with previous conversations available in the sidebar.
-- **Web search** with source links and numbered citations.
 - **Reasoning support** for Qwen 3, with thinking separated from the final answer.
 - **Text and Markdown attachments** for reference material.
 - **Select-to-cite** to quote part of a message in your next request.
@@ -46,7 +45,7 @@ docker compose up --build -d --wait
 
 Open **http://localhost:4174**.
 
-Docker Compose starts the app and its SearXNG search service. Docker does not need GPU access: inference runs in your browser.
+Docker Compose starts the app. Docker does not need GPU access: inference runs in your browser.
 
 To use another port:
 
@@ -80,7 +79,7 @@ npm run build
 npm run preview -- --host 127.0.0.1 --port 4175
 ```
 
-The app works without Docker, but web search needs a search backend. The Vite configuration forwards `/api/search` to the Docker gateway at `http://127.0.0.1:4174`.
+The Node.js setup does not require Docker.
 
 The service worker is enabled in production builds, not during development.
 
@@ -141,15 +140,15 @@ It uses a **conservative byte-based budget**, not measured token usage or GPU me
 
 ## Models
 
-| Model | Approximate weights | Estimated GPU memory |
-| --- | ---: | ---: |
-| Phi 3.5 Mini | 2.15 GB | 3.7 GB |
-| Llama 3.2 3B | 1.81 GB | 2.3 GB |
-| Qwen 2.5 3B | 1.74 GB | 2.5 GB |
-| Qwen 2.5 1.5B | 870 MB | 1.6 GB |
-| Llama 3.2 1B | 695 MB | 880 MB |
-| Qwen 3 0.6B | 335 MB | 1.4 GB |
-| Qwen 2.5 0.5B | 280 MB | 945 MB |
+| Model         | Approximate weights | Estimated GPU memory |
+| ------------- | ------------------: | -------------------: |
+| Phi 3.5 Mini  |             2.15 GB |               3.7 GB |
+| Llama 3.2 3B  |             1.81 GB |               2.3 GB |
+| Qwen 2.5 3B   |             1.74 GB |               2.5 GB |
+| Qwen 2.5 1.5B |              870 MB |               1.6 GB |
+| Llama 3.2 1B  |              695 MB |               880 MB |
+| Qwen 3 0.6B   |              335 MB |               1.4 GB |
+| Qwen 2.5 0.5B |              280 MB |               945 MB |
 
 Qwen 2.5 0.5B is the default. These estimates exclude some runtime and browser overhead and do not guarantee device compatibility.
 
@@ -163,22 +162,9 @@ Thinking appears in a separate, collapsed section. Only the final answer is reus
 
 Reasoning uses more of the available context and can take longer. A model may reach its output limit or timeout before producing a final answer.
 
-## Web search
+## Web access
 
-Enable **Web** before sending a message.
-
-Locai sends the current question to SearXNG and gives the local model up to four search-result snippets. Responses can cite these sources, and the source list shows the results used.
-
-- No search API key or paid subscription is required.
-- Web search is off by default.
-- Only the current question, limited to 300 characters, is sent.
-- Earlier messages and attachment contents are not included in the search query.
-- Search requires internet and a configured search service.
-- Search failures are shown explicitly.
-
-This is snippet-based search, not full-page browsing or an autonomous research agent. Check the linked sources: small models can misinterpret results or omit citations.
-
-The bundled SearXNG setup is intended for local use. Before public deployment, configure a private `SEARXNG_SECRET`, appropriate access controls, and an HTTPS reverse proxy.
+Live web search is not available. Paste reference text or attach text/Markdown files to give the model external context. Source links in older saved conversations remain accessible.
 
 ## Privacy and storage
 
@@ -187,18 +173,17 @@ Messages and attachments are processed locally for model inference.
 Network access is used for:
 
 - Model and runtime downloads.
-- Optional web-search queries.
 - Source links you choose to open.
 
 Generated HTML is disabled, and model-generated remote images are not fetched automatically.
 
-| Data | Storage |
-| --- | --- |
-| Saved chats and attachments | Browser local storage |
-| Downloaded model files | Browser cache |
-| Theme and selected model | Browser local storage |
-| Temporary chats and unsent drafts | Current tab memory |
-| Production app files | Service-worker cache |
+| Data                              | Storage               |
+| --------------------------------- | --------------------- |
+| Saved chats and attachments       | Browser local storage |
+| Downloaded model files            | Browser cache         |
+| Theme and selected model          | Browser local storage |
+| Temporary chats and unsent drafts | Current tab memory    |
+| Production app files              | Service-worker cache  |
 
 Saved conversations are **not encrypted by Locai**. Clearing site data removes chats and downloads. Browsers may also evict cached model files.
 
@@ -208,28 +193,27 @@ Offline use requires the production app and all model dependencies to be cached.
 
 ## Keyboard controls
 
-| Shortcut | Action |
-| --- | --- |
-| Enter | Send |
-| Shift+Enter | New line |
-| Ctrl+Enter / Command+Enter | New line |
-| Tab / Shift+Tab | Move between controls |
-| Escape | Dismiss an open menu or dialog |
+| Shortcut                   | Action                         |
+| -------------------------- | ------------------------------ |
+| Enter                      | Send                           |
+| Shift+Enter                | New line                       |
+| Ctrl+Enter / Command+Enter | New line                       |
+| Tab / Shift+Tab            | Move between controls          |
+| Escape                     | Dismiss an open menu or dialog |
 
 IME composition does not submit a message. Controls have accessible labels and visible focus states.
 
 ## Troubleshooting
 
-| Issue | What to try |
-| --- | --- |
-| WebGPU unavailable | Enable hardware acceleration and use a supported desktop browser over HTTPS or localhost. |
-| Model loads after every refresh | Expected: cached weights must be prepared in GPU memory again. |
-| Model downloads again | Check the browser profile, hostname, port, cleared site data, or cache eviction. |
-| Download appears stuck | Check the model’s progress ring. Stop and select the model again to retry. |
-| Large model fails to load | Try a smaller model and close other GPU-heavy applications or tabs. |
-| Web search fails | Check that SearXNG is running and reachable. Search engines may rate-limit requests or require CAPTCHAs. |
-| Old interface appears | Allow the service worker to update, then reload. Avoid clearing all site data first. |
-| Chat is missing | Check the same browser profile and origin, and whether the chat was temporary. |
+| Issue                           | What to try                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------------- |
+| WebGPU unavailable              | Enable hardware acceleration and use a supported desktop browser over HTTPS or localhost. |
+| Model loads after every refresh | Expected: cached weights must be prepared in GPU memory again.                            |
+| Model downloads again           | Check the browser profile, hostname, port, cleared site data, or cache eviction.          |
+| Download appears stuck          | Check the model’s progress ring. Stop and select the model again to retry.                |
+| Large model fails to load       | Try a smaller model and close other GPU-heavy applications or tabs.                       |
+| Old interface appears           | Allow the service worker to update, then reload. Avoid clearing all site data first.      |
+| Chat is missing                 | Check the same browser profile and origin, and whether the chat was temporary.            |
 
 Model loading times out after ten minutes. Generation times out after two minutes.
 
@@ -263,17 +247,16 @@ See [`docs/evaluation.md`](docs/evaluation.md) for model-output evaluation.
 
 ### Project structure
 
-| Area | Files |
-| --- | --- |
-| Chat workspace | `src/App.tsx`, `src/ConversationSidebar.tsx` |
-| Model selection | `src/ModelPicker.tsx`, `src/models.ts` |
-| Inference and lifecycle | `src/inference.ts`, `src/inference.worker.ts`, `src/useWriter.ts` |
-| Persona and context | `src/persona.ts`, `src/prompts.ts` |
-| Conversations and storage | `src/conversations.ts`, `src/storage.ts` |
-| Search | `src/search.ts`, `docker/searxng/settings.yml` |
-| Mobile notice | `src/MobileNotice.tsx` |
-| Offline app caching | `src/offline.ts`, `vite.config.ts` |
-| Tests | `src/*.test.*`, `e2e/` |
+| Area                      | Files                                                             |
+| ------------------------- | ----------------------------------------------------------------- |
+| Chat workspace            | `src/App.tsx`, `src/ConversationSidebar.tsx`                      |
+| Model selection           | `src/ModelPicker.tsx`, `src/models.ts`                            |
+| Inference and lifecycle   | `src/inference.ts`, `src/inference.worker.ts`, `src/useWriter.ts` |
+| Persona and context       | `src/persona.ts`, `src/prompts.ts`                                |
+| Conversations and storage | `src/conversations.ts`, `src/storage.ts`                          |
+| Mobile notice             | `src/MobileNotice.tsx`                                            |
+| Offline app caching       | `src/offline.ts`, `vite.config.ts`                                |
+| Tests                     | `src/*.test.*`, `e2e/`                                            |
 
 ## Limitations
 

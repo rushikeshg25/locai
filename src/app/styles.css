@@ -1144,16 +1144,6 @@ del {
   height: 38px;
 }
 
-.web-search-toggle {
-  gap: 5px;
-  padding: 6px 9px;
-  min-height: 34px;
-  font-size: 12px;
-}
-.web-search-toggle[aria-pressed="true"] {
-  color: var(--focus);
-  background: var(--soft);
-}
 .search-query {
   display: block;
   color: var(--muted);
@@ -1195,9 +1185,6 @@ del {
   }
   .model-name {
     max-width: 110px;
-  }
-  .web-search-toggle {
-    flex-shrink: 0;
   }
 }
 
@@ -1278,7 +1265,6 @@ input[type="radio"] {
 
 @media (max-width: 600px), (pointer: coarse) {
   button,
-  .web-search-toggle,
   .icon-button,
   .send-button,
   .chat-menu > summary,
@@ -1308,9 +1294,7 @@ input[type="radio"] {
   .chat-search-field #chat-search {
     font-size: 16px;
   }
-  .web-search-toggle {
-    padding-inline: 6px;
-  }
+
   .model-settings > summary {
     padding-inline: 4px;
     gap: 4px;
