@@ -256,6 +256,26 @@ export default function App({
       ),
     }));
   }
+  function deleteChat(id: string) {
+    if (!window.confirm("Delete this conversation and its saved copy?")) return;
+    try {
+      forgetChat(id);
+      setChats((items) => {
+        const remaining = items.filter((item) => item.id !== id);
+        return remaining.length ? remaining : [newConversation()];
+      });
+      if (id === chat.id) {
+        setActive("");
+        setText("");
+        replaceAttachments([]);
+        setResend(null);
+      }
+    } catch {
+      setFeedback(
+        "Could not delete the saved copy. Browser storage may be blocked.",
+      );
+    }
+  }
   function newChat() {
     const next = newConversation();
     setChats((items) => [next, ...items]);
@@ -472,6 +492,11 @@ export default function App({
         open={sidebarOpen}
         onOpen={setSidebarOpen}
         onNew={newChat}
+        onRename={(id, title) => update(id, (item) => ({ ...item, title }))}
+        onPin={(id) =>
+          update(id, (item) => ({ ...item, pinned: !item.pinned }))
+        }
+        onDelete={deleteChat}
       />
       <main className="workspace">
         <header>
@@ -512,9 +537,6 @@ export default function App({
                   <Icon name="more" />
                 </summary>
                 <div className="chat-menu-panel">
-                  <small>
-                    {chat.saved ? "Saved on this device" : "Temporary chat"}
-                  </small>
                   <Button
                     className="secondary"
                     disabled={busy}
@@ -569,33 +591,7 @@ export default function App({
                     className="secondary"
                     disabled={busy}
                     title="Delete this conversation and its saved copy"
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          "Delete this conversation and its saved copy?",
-                        )
-                      )
-                        return;
-                      try {
-                        forgetChat(chat.id);
-                        setChats((items) => {
-                          const remaining = items.filter(
-                            (item) => item.id !== chat.id,
-                          );
-                          return remaining.length
-                            ? remaining
-                            : [newConversation()];
-                        });
-                        setActive("");
-                        setText("");
-                        replaceAttachments([]);
-                        setResend(null);
-                      } catch {
-                        setFeedback(
-                          "Could not delete the saved copy. Browser storage may be blocked.",
-                        );
-                      }
-                    }}
+                    onClick={() => deleteChat(chat.id)}
                   >
                     <Icon name="clear" />
                     Delete

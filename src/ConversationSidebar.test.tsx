@@ -22,13 +22,15 @@ it("searches titles and message contents and switches chats", () => {
   fireEvent.change(screen.getByLabelText("Search conversations"), {
     target: { value: "postgresql" },
   });
-  expect(screen.getByRole("button", { name: /First/ })).toBeInTheDocument();
   expect(
-    screen.queryByRole("button", { name: /Weekend/ }),
+    screen.getByRole("button", { name: "Open chat: First" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Open chat: Weekend" }),
   ).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Search conversations"), {
     target: { value: "weekend" },
   });
-  fireEvent.click(screen.getByRole("button", { name: /Weekend/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Open chat: Weekend" }));
   expect(select).toHaveBeenCalledWith(second.id);
 });

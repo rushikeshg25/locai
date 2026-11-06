@@ -115,7 +115,7 @@ it("preserves failed messages and forks a retry", async () => {
   expect(
     screen
       .getByRole("navigation", { name: "Conversations" })
-      .querySelectorAll("button"),
+      .querySelectorAll(".chat-select"),
   ).toHaveLength(2);
 });
 it("edit and resend keeps the original branch", async () => {
@@ -127,7 +127,7 @@ it("edit and resend keeps the original branch", async () => {
   expect(
     screen
       .getByRole("navigation", { name: "Conversations" })
-      .querySelectorAll("button"),
+      .querySelectorAll(".chat-select"),
   ).toHaveLength(2);
   expect(writer.generate).toHaveBeenLastCalledWith(
     expect.objectContaining({ text: "Changed", history: [] }),
@@ -180,7 +180,7 @@ it("automatically saves messages, restores history and can make it temporary", a
       key.startsWith("local-writer-chat"),
     ),
   ).toHaveLength(1);
-  await screen.findByText("Saved on this device");
+  expect(screen.queryByLabelText("Saved on device")).not.toBeInTheDocument();
   cleanup();
   setup();
   fireEvent.click(screen.getByRole("button", { name: "Open chat: Keep this" }));
@@ -224,7 +224,7 @@ it("can branch from a reply without making another model request", async () => {
   expect(
     screen
       .getByRole("navigation", { name: "Conversations" })
-      .querySelectorAll("button"),
+      .querySelectorAll(".chat-select"),
   ).toHaveLength(2);
   await send("Continue here");
   expect(writer.generate).toHaveBeenLastCalledWith(
@@ -275,13 +275,18 @@ it("stops saving a stale copy when another tab changes it", async () => {
   setup();
   await ready();
   await send("Saved request");
-  await screen.findByText("Saved on this device");
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "New chat" })).toBeEnabled(),
+  );
+  expect(screen.queryByLabelText("Saved on device")).not.toBeInTheDocument();
   const key = Object.keys(localStorage).find((key) =>
     key.startsWith("local-writer-chat-v1:"),
   )!;
   localStorage.removeItem(key);
   fireEvent(window, new StorageEvent("storage", { key, newValue: null }));
-  expect(screen.getByText("Temporary chat")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Save on device" }),
+  ).toBeInTheDocument();
   expect(localStorage.getItem(key)).toBeNull();
 });
 

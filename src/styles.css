@@ -804,33 +804,109 @@ del {
   overflow: auto;
   scrollbar-width: thin;
 }
-.conversation-sidebar nav button {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  text-align: left;
+.chat-row {
+  position: relative;
+  border-radius: 9px;
   margin-bottom: 2px;
-  font-size: 13px;
-  min-height: 36px;
-  padding: 8px 10px;
 }
-.conversation-sidebar nav button > span:first-child {
+.chat-row.active,
+.chat-row:hover,
+.chat-row:focus-within {
+  background: var(--soft);
+}
+.conversation-sidebar .chat-select {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px;
+  justify-content: flex-start;
+  text-align: left;
+  font-size: 13px;
+  background: transparent;
+}
+.chat-select > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
 }
-.saved-indicator {
+.chat-row-actions {
+  position: absolute;
+  right: 2px;
+  top: 0;
+  bottom: 0;
   display: flex;
-  flex-shrink: 0;
-}
-.saved-indicator .icon {
-  width: 13px;
-  height: 13px;
-}
-.conversation-sidebar [aria-current="page"] {
+  align-items: center;
+  padding-left: 8px;
   background: var(--soft);
+  border-radius: 9px;
+  opacity: 0;
+  pointer-events: none;
+}
+.chat-row:hover .chat-row-actions,
+.chat-row:focus-within .chat-row-actions,
+.chat-row-actions.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.chat-row-actions button {
+  width: 28px;
+  min-height: 32px;
+  padding: 5px;
+}
+.chat-row-actions .icon {
+  width: 15px;
+  height: 15px;
+}
+.chat-row-actions [aria-pressed="true"] {
   color: var(--text);
+}
+.chat-row-menu {
+  position: fixed;
+  z-index: 50;
+  width: 180px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--panel-shadow);
+}
+.chat-row-menu button {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px;
+}
+.chat-row-menu .danger {
+  color: var(--danger, #dc5353);
+}
+.chat-rename {
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+.chat-rename input {
+  flex: 1;
+}
+.chat-rename button {
+  padding: 6px;
+  min-height: 36px;
+}
+@media (hover: none), (pointer: coarse) {
+  .chat-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+    padding-left: 0;
+  }
+  .chat-row-actions button {
+    width: 44px;
+    min-height: 44px;
+  }
+  .conversation-sidebar .chat-select {
+    min-height: 48px;
+    padding-right: 92px;
+  }
 }
 .chat-drawer {
   inset: 0 auto 0 0;

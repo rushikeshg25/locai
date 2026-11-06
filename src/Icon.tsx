@@ -4,6 +4,7 @@ const paths = {
   sidebar: "M3 4h18v16H3z M9 4v16",
   branch:
     "M6 3v12a4 4 0 0 0 4 4h8 M6 7h8a4 4 0 0 0 4-4 M15 16l3 3-3 3 M15 6l3-3 3 3",
+  pin: "m16 3 5 5-4 2-3 5-3-3-5 3 3-5-3-3 5-3z M9 15l-6 6",
   plus: "M12 5v14 M5 12h14",
   edit: "m16 3 5 5-12 12H4v-5z M13 6l5 5",
   save: "M4 3h13l4 4v14H3V3z M7 3v6h10V3 M7 21v-8h10v8",
