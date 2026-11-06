@@ -413,7 +413,11 @@ header {
 }
 .model-catalog {
   display: grid;
-  gap: 7px;
+  gap: 10px;
+  max-height: min(34dvh, 320px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 2px 4px 2px 0;
 }
 .model-option {
   display: flex;
@@ -433,15 +437,20 @@ header {
   accent-color: var(--focus);
 }
 .model-option strong {
+  display: block;
   font-size: 13px;
+  margin-bottom: 4px;
 }
 .model-option small {
   display: block;
 }
 .model-controls {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
 }
 .model-controls button {
   font-size: 12px;

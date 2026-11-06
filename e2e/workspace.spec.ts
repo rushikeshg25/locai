@@ -83,7 +83,7 @@ test("model picker keeps selections open and dismisses outside or with Escape", 
   const trigger = page.getByLabel("Models", { exact: true });
   const picker = page.locator(".model-settings");
   await trigger.click();
-  await page.getByRole("radio", { name: /Larger/ }).check();
+  await page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }).check();
   await expect(picker).toHaveAttribute("open", "");
   await page.getByRole("heading", { name: "Local Writer" }).click();
   await expect(picker).not.toHaveAttribute("open");
@@ -91,4 +91,27 @@ test("model picker keeps selections open and dismisses outside or with Escape", 
   await page.keyboard.press("Escape");
   await expect(picker).not.toHaveAttribute("open");
   await expect(trigger).toBeFocused();
+});
+
+test("expanded model catalog keeps actions separated and reachable", async ({
+  page,
+}) => {
+  await page.goto("/");
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.getByLabel("Models", { exact: true }).click();
+    await expect(page.getByRole("radio")).toHaveCount(6);
+    await page.getByRole("radio", { name: /Phi 3.5 Mini/ }).check();
+    await expect(
+      page.getByRole("radio", { name: /Phi 3.5 Mini/ }),
+    ).toBeChecked();
+    const list = await page.locator(".model-catalog").boundingBox();
+    const controls = await page.locator(".model-controls").boundingBox();
+    expect(controls!.y - (list!.y + list!.height)).toBeGreaterThanOrEqual(16);
+    await expect(
+      page.getByRole("button", { name: "Delete downloaded model" }),
+    ).toBeInViewport();
+    await page.screenshot({ path: `/tmp/model-picker-${width}.png` });
+    await page.keyboard.press("Escape");
+  }
 });

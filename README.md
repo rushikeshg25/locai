@@ -62,6 +62,10 @@ Open **Models** beside Send. Browser models need HTTPS or localhost, a WebGPU-ca
 | ------------- | ------------------- | -------------------- |
 | Qwen 2.5 0.5B | 280 MB              | 945 MB               |
 | Qwen 2.5 1.5B | 870 MB              | 1.6 GB               |
+| Llama 3.2 1B  | 695 MB              | 880 MB               |
+| Llama 3.2 3B  | 1.81 GB             | 2.3 GB               |
+| Qwen 2.5 3B   | 1.74 GB             | 2.5 GB               |
+| Phi 3.5 Mini  | 2.15 GB             | 3.7 GB               |
 
 Runtime and browser overhead are additional. The picker distinguishes downloaded weights from a model loaded in memory, shows estimated site storage, and can request persistent browser storage. Unload frees the worker; Delete downloaded model confirms before deleting the selected WebLLM model files. Browser eviction, interrupted downloads, or missing runtime files can prevent offline use.
 
