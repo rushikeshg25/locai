@@ -455,6 +455,16 @@ header {
 .model-controls button {
   font-size: 12px;
 }
+.model-controls .model-delete {
+  flex-basis: 100%;
+  justify-content: flex-start;
+  padding-inline: 0;
+  border-inline-width: 0;
+}
+.model-controls .model-delete:not(:disabled):hover {
+  background: transparent;
+  color: var(--danger);
+}
 .model-panel .muted {
   margin: 12px 0;
 }

@@ -181,7 +181,7 @@ export function ModelPicker({
             Unload
           </Button>
           <Button
-            className="secondary"
+            className="secondary model-delete"
             disabled={busy}
             onClick={() => {
               const label =
