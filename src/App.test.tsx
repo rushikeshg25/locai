@@ -112,7 +112,9 @@ it("preserves failed messages and forks a retry", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Retry" }));
   await screen.findByText("We might ship Friday.");
   expect(
-    screen.getByLabelText("Conversation").querySelectorAll("option"),
+    screen
+      .getByRole("navigation", { name: "Conversations" })
+      .querySelectorAll("button"),
   ).toHaveLength(2);
 });
 it("edit and resend keeps the original branch", async () => {
@@ -122,7 +124,9 @@ it("edit and resend keeps the original branch", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Edit & resend" }));
   await send("Changed");
   expect(
-    screen.getByLabelText("Conversation").querySelectorAll("option"),
+    screen
+      .getByRole("navigation", { name: "Conversations" })
+      .querySelectorAll("button"),
   ).toHaveLength(2);
   expect(writer.generate).toHaveBeenLastCalledWith(
     expect.objectContaining({ text: "Changed", history: [] }),
@@ -179,14 +183,7 @@ it("saves only after opt-in, restores saved history and can make it temporary", 
   await screen.findByText("Saved on this device");
   cleanup();
   setup();
-  const chooser = screen.getByLabelText("Conversation");
-  const options = Array.from(chooser.querySelectorAll("option"));
-  fireEvent.change(chooser, {
-    target: {
-      value: options.find((option) => option.textContent === "Keep this")!
-        .value,
-    },
-  });
+  fireEvent.click(screen.getByRole("button", { name: "Open chat: Keep this" }));
   expect(screen.getByText("We might ship Friday.")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Make temporary" }));
   expect(
@@ -226,7 +223,9 @@ it("can branch from a reply without making another model request", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Branch" }));
   expect(writer.generate).toHaveBeenCalledOnce();
   expect(
-    screen.getByLabelText("Conversation").querySelectorAll("option"),
+    screen
+      .getByRole("navigation", { name: "Conversations" })
+      .querySelectorAll("button"),
   ).toHaveLength(2);
   await send("Continue here");
   expect(writer.generate).toHaveBeenLastCalledWith(

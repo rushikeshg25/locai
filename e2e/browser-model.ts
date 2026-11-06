@@ -1,8 +1,8 @@
 import type { Page } from "@playwright/test";
 // Fixture only: exercise the production WebLLM client/worker boundary without
 // downloading weights. This does not measure inference quality or GPU support.
-export async function installBrowserModel(page: Page) {
-  await page.addInitScript(() => {
+export async function installBrowserModel(page: Page, loadDelay = 0) {
+  await page.addInitScript((loadDelay) => {
     Object.defineProperty(navigator, "gpu", {
       configurable: true,
       value: { requestAdapter: async () => ({}) },
@@ -44,14 +44,17 @@ export async function installBrowserModel(page: Page) {
             ],
           };
         }
-        queueMicrotask(() => {
-          if (!this.closed)
-            this.onmessage?.(
-              new MessageEvent("message", {
-                data: { kind: "return", uuid: message.uuid, content },
-              }),
-            );
-        });
+        setTimeout(
+          () => {
+            if (!this.closed)
+              this.onmessage?.(
+                new MessageEvent("message", {
+                  data: { kind: "return", uuid: message.uuid, content },
+                }),
+              );
+          },
+          message.kind === "reload" ? loadDelay : 0,
+        );
       }
       terminate() {
         this.closed = true;
@@ -64,7 +67,7 @@ export async function installBrowserModel(page: Page) {
           : Reflect.construct(target, args);
       },
     });
-  });
+  }, loadDelay);
 }
 export async function modelRequests(page: Page) {
   return page.evaluate(

@@ -1,3 +1,4 @@
+import { LoadingStatus } from "./LoadingStatus";
 import { Button } from "./Button";
 import { useEffect, useRef, useState } from "react";
 import { models } from "./models";
@@ -7,6 +8,8 @@ export function ModelPicker({
   writer,
   model,
   status,
+  progress,
+  required = false,
   supported,
   onSelect,
   onLoad,
@@ -20,6 +23,8 @@ export function ModelPicker({
   writer: Writer;
   model: string;
   status: string;
+  progress?: { value: number; message: string };
+  required?: boolean;
   supported: boolean | null;
   onSelect: (id: string) => void;
   onLoad: () => void;
@@ -76,6 +81,13 @@ export function ModelPicker({
         title="Select, download or manage writing models"
       >
         <Icon name="model" />
+        {status === "loading" && (
+          <span
+            className="model-loading-dot"
+            role="status"
+            aria-label="Loading model"
+          />
+        )}
         <span className="model-name">
           {models.find((item) => item.id === model)?.label.split(" · ")[1] ??
             model}
@@ -84,6 +96,14 @@ export function ModelPicker({
       </summary>
       <section className="model-panel" aria-label="Model setup">
         <h2>Models</h2>
+        {required && status !== "ready" && status !== "loading" && (
+          <p role="alert" className="model-required">
+            Load a model before sending. Your draft is kept.
+          </p>
+        )}
+        {status === "loading" && progress && (
+          <LoadingStatus progress={progress} />
+        )}
         <p className="muted">
           {supported === true
             ? "WebGPU available"

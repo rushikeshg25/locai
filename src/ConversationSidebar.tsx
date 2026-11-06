@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Icon } from "./Icon";
 import { Button } from "./Button";
 import type { Conversation } from "./conversations";
 export function ConversationSidebar({
@@ -6,7 +7,13 @@ export function ConversationSidebar({
   active,
   busy,
   onSelect,
+  onNew,
+  open = true,
+  onOpen,
 }: {
+  open?: boolean;
+  onOpen?: (open: boolean) => void;
+  onNew?: () => void;
   chats: Conversation[];
   active: string;
   busy: boolean;
@@ -18,19 +25,63 @@ export function ConversationSidebar({
       .toLocaleLowerCase()
       .includes(query.trim().toLocaleLowerCase()),
   );
-  return (
-    <aside className="conversation-sidebar" aria-label="Chat history">
-      <h2>Your chats</h2>
+  const [mobile, setMobile] = useState(
+    () => window.matchMedia?.("(max-width: 900px)").matches ?? false,
+  );
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const media = window.matchMedia?.("(max-width: 900px)");
+    if (!media) return;
+    const change = () => {
+      setMobile(media.matches);
+      onOpen?.(!media.matches);
+    };
+    media.addEventListener("change", change);
+    return () => media.removeEventListener("change", change);
+  }, [onOpen]);
+  useEffect(() => {
+    if (mobile && open) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [mobile, open]);
+  const content = (
+    <>
+      <div className="sidebar-heading">
+        <h2>Chats</h2>
+        <Button
+          className="icon-button secondary"
+          aria-label="Collapse chats"
+          onClick={() => onOpen?.(false)}
+        >
+          <Icon name="sidebar" />
+        </Button>
+      </div>
+      {onNew && (
+        <Button
+          className="new-chat"
+          disabled={busy}
+          onClick={() => {
+            setQuery("");
+            onNew();
+            if (mobile) onOpen?.(false);
+          }}
+        >
+          <Icon name="plus" />
+          New chat
+        </Button>
+      )}
       <label className="sr-only" htmlFor="chat-search">
         Search conversations
       </label>
-      <input
-        id="chat-search"
-        type="search"
-        placeholder="Search conversations"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-      />
+      <div className="chat-search-field">
+        <Icon name="search" />
+        <input
+          id="chat-search"
+          type="search"
+          placeholder="Search conversations"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
       <nav aria-label="Conversations">
         {filtered.map((chat) => (
           <Button
@@ -39,20 +90,45 @@ export function ConversationSidebar({
             data-chat-id={chat.id}
             aria-current={chat.id === active ? "page" : undefined}
             disabled={busy}
-            onClick={() => onSelect(chat.id)}
+            aria-label={`Open chat: ${chat.title}`}
+            onClick={() => {
+              onSelect(chat.id);
+              if (mobile) onOpen?.(false);
+            }}
           >
             <span>{chat.title}</span>
-            <small>{chat.saved ? "Saved on device" : "Temporary"}</small>
+            {chat.saved && (
+              <span className="saved-indicator" aria-label="Saved on device">
+                <Icon name="save" />
+              </span>
+            )}
           </Button>
         ))}
         {!filtered.length && (
           <p className="muted">No matching conversations.</p>
         )}
       </nav>
-      <p className="muted">
-        Temporary chats disappear when this tab closes. Save a chat to keep it
-        on this device.
-      </p>
+    </>
+  );
+  return mobile ? (
+    <dialog
+      ref={dialog}
+      className="chat-drawer"
+      aria-label="Chat history"
+      onCancel={() => onOpen?.(false)}
+      onClick={(event) => {
+        if (event.target === dialog.current) onOpen?.(false);
+      }}
+    >
+      <div className="conversation-sidebar">{content}</div>
+    </dialog>
+  ) : (
+    <aside
+      className="conversation-sidebar"
+      aria-label="Chat history"
+      hidden={!open}
+    >
+      {content}
     </aside>
   );
 }
