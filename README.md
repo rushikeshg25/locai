@@ -2,8 +2,6 @@
 
 Chat with a language model, work through ideas, and revise drafts—all in your browser. Locai runs models on your device through WebGPU, with no account, API key, or model server.
 
-Previously named Local Writer. Existing browser storage keys retain the old prefix so saved chats and preferences continue to work on the same origin.
-
 The app is a static React application. Your browser downloads the model files and performs inference; Nginx serves the app and forwards optional web searches to a bundled SearXNG service. No model inference runs on the server.
 
 ## Get started
