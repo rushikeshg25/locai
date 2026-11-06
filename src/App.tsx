@@ -19,7 +19,8 @@ import {
   type Action,
 } from "./actions";
 import { LocalWriter, type Writer } from "./inference";
-import { checkGPU, models } from "./models";
+import { splitReasoning } from "./reasoning";
+import { checkGPU, models, supportsReasoning } from "./models";
 import { ChangeReview } from "./ChangeReview";
 import { Icon } from "./Icon";
 import { useWriter } from "./useWriter";
@@ -68,6 +69,9 @@ export default function App({
   const autoAttempted = useRef(false);
   const session = useWriter(writer);
   const [webSearch, setWebSearch] = useState(false);
+  const [reasoningEnabled, setReasoningEnabled] = useState(
+    () => getPreference("reasoning", "true") === "true",
+  );
   const [searching, setSearching] = useState<string | null>(null);
   const searchController = useRef<AbortController | null>(null);
   useEffect(() => () => searchController.current?.abort(), []);
@@ -87,8 +91,6 @@ export default function App({
   const [active, setActive] = useState("");
   const chat = chats.find((item) => item.id === active) ?? chats[0];
   const [text, setText] = useState("");
-  const [terms, setTerms] = useState("");
-  const [instruction, setInstruction] = useState("");
   const [action, setAction] = useState<Action>("grammar");
   const [feedback, setFeedback] = useState(saved.warning);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -270,9 +272,10 @@ export default function App({
     attached = attachments,
     requestMode = chat.mode,
     requestAction = action,
-    requestTerms = terms,
-    requestInstruction = instruction,
+    requestTerms = "",
+    requestInstruction = "",
     useSearch = webSearch && requestMode === "chat",
+    useReasoning = reasoningEnabled,
   ) {
     if (busy || searchController.current) return;
     if (session.status !== "ready") {
@@ -291,7 +294,10 @@ export default function App({
       setFeedback(error);
       return;
     }
+    const reasoning =
+      supportsReasoning(selected.id) && requestMode === "chat" && useReasoning;
     let request: WritingRequest = {
+      reasoning,
       text: messageText({ content: source, attachments: attached }),
       mode: requestMode,
       action: requestAction,
@@ -311,6 +317,7 @@ export default function App({
       id: crypto.randomUUID(),
       role: "user",
       webSearch: useSearch,
+      reasoningEnabled: reasoning,
       content: source,
       attachments: attached,
       mode: requestMode,
@@ -322,6 +329,7 @@ export default function App({
       id: crypto.randomUUID(),
       role: "assistant",
       webSearch: useSearch,
+      reasoningEnabled: reasoning,
       content: "",
       state: "streaming",
       model: selected.id,
@@ -387,11 +395,13 @@ export default function App({
         }
       }
     }
+    const parse = (content: string) =>
+      supportsReasoning(selected.id) ? splitReasoning(content) : { content };
     const result = await session.run(request, (content) =>
-      patch(id, answer.id, { content }),
+      patch(id, answer.id, parse(content)),
     );
     patch(id, answer.id, {
-      content: result.text,
+      ...parse(result.text),
       state: result.state,
       truncated: result.truncated,
     });
@@ -400,11 +410,15 @@ export default function App({
   if (text.trim()) {
     try {
       const budget = prepareMessages({
+        reasoning:
+          reasoningEnabled &&
+          supportsReasoning(selected.id) &&
+          chat.mode === "chat",
         text: messageText({ content: text, attachments }),
         mode: chat.mode,
         action,
-        terms,
-        instruction,
+        terms: "",
+        instruction: "",
         history: conversationHistory(resend ?? chat.messages),
         contextWindow: 4096,
       });
@@ -626,6 +640,30 @@ export default function App({
                     <small>{actions[message.action ?? "grammar"].label}</small>
                   )}
                 </div>
+                {message.role === "assistant" &&
+                  (message.reasoning || message.thinking) && (
+                    <details className="reasoning-block">
+                      <summary>
+                        {message.state === "streaming" && message.thinking
+                          ? "Thinking…"
+                          : message.thinking
+                            ? "Thinking interrupted"
+                            : "Thinking"}
+                      </summary>
+                      <div className="reasoning-text">
+                        {message.reasoning || "Preparing…"}
+                      </div>
+                    </details>
+                  )}
+                {message.role === "assistant" &&
+                  message.reasoning &&
+                  !message.content &&
+                  message.state !== "streaming" && (
+                    <p className="muted">
+                      No final answer was produced. Reasoning may have reached
+                      the output limit or been interrupted.
+                    </p>
+                  )}
                 {edit === message.id ? (
                   <div className="result-editor">
                     <textarea
@@ -749,8 +787,6 @@ export default function App({
                           mode: message.mode ?? "chat",
                         }));
                         setAction(message.action ?? "grammar");
-                        setTerms(message.terms ?? "");
-                        setInstruction(message.instruction ?? "");
                         setResend(chat.messages.slice(0, index));
                         composer.current?.focus();
                       }}
@@ -778,6 +814,7 @@ export default function App({
                               user.terms ?? "",
                               user.instruction ?? "",
                               user.webSearch ?? false,
+                              user.reasoningEnabled ?? false,
                             );
                         }}
                       >
@@ -967,32 +1004,6 @@ export default function App({
                       ))}
                     </select>
                   </div>
-                  <details className="writing-preferences">
-                    <summary>Writing preferences · optional</summary>
-                    <label>
-                      Protected terms
-                      <input
-                        value={terms}
-                        maxLength={300}
-                        disabled={busy}
-                        onChange={(event) => setTerms(event.target.value)}
-                        placeholder="PostgreSQL, Acme, API"
-                      />
-                    </label>
-                    <small>
-                      Comma-separated. Missing terms are flagged for review.
-                    </small>
-                    <label>
-                      Custom instruction
-                      <input
-                        value={instruction}
-                        maxLength={300}
-                        disabled={busy}
-                        onChange={(event) => setInstruction(event.target.value)}
-                        placeholder="Be polite but direct."
-                      />
-                    </label>
-                  </details>
                 </div>
               </details>
             )}
@@ -1157,6 +1168,13 @@ export default function App({
                   required={modelRequired}
                   supported={supported}
                   autoLoad={autoLoad}
+                  reasoning={reasoningEnabled}
+                  reasoningAllowed={chat.mode === "chat"}
+                  onReasoning={(value) => {
+                    setReasoningEnabled(value);
+                    if (!setPreference("reasoning", String(value)))
+                      setFeedback("Reasoning preference could not be saved.");
+                  }}
                   onAutoLoad={(value) => {
                     setAutoLoad(value);
                     if (!setPreference("auto-load", String(value)))

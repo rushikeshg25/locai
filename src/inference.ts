@@ -5,7 +5,12 @@ import {
   hasModelInCache,
   type WebWorkerMLCEngine,
 } from "@mlc-ai/web-llm";
-import { prepareMessages, type WritingRequest } from "./prompts";
+import { supportsReasoning } from "./models";
+import {
+  prepareMessages,
+  outputTokenLimit,
+  type WritingRequest,
+} from "./prompts";
 export interface Writer {
   load(
     model: string,
@@ -38,6 +43,7 @@ export class LocalWriter implements Writer {
         }
       : prebuiltAppConfig;
   }
+  private loadedModel = "";
   private worker?: Worker;
   private engine?: WebWorkerMLCEngine;
   private interrupted = false;
@@ -72,18 +78,31 @@ export class LocalWriter implements Writer {
     );
     if (this.worker !== worker) throw new Error("Model loading was cancelled.");
     this.engine = engine;
+    this.loadedModel = model;
   }
   async generate(request: WritingRequest, chunk: (text: string) => void) {
     const engine = this.engine;
     if (!engine) throw new Error("Load a model first.");
     this.interrupted = false;
+    const capable = supportsReasoning(this.loadedModel);
+    const effective = {
+      ...request,
+      reasoning: capable && request.mode === "chat" && !!request.reasoning,
+    };
     return this.guarded(
       (async () => {
         const stream = await engine.chat.completions.create({
-          messages: prepareMessages(request).messages,
+          messages: prepareMessages(effective).messages,
           stream: true,
-          temperature: request.mode === "chat" ? 0.7 : 0.2,
-          max_tokens: 1200,
+          temperature: effective.reasoning
+            ? 0.6
+            : request.mode === "chat"
+              ? 0.7
+              : 0.2,
+          max_tokens: outputTokenLimit(effective),
+          ...(capable
+            ? { extra_body: { enable_thinking: effective.reasoning } }
+            : {}),
         });
         let text = "";
         let truncated = false;
@@ -110,6 +129,7 @@ export class LocalWriter implements Writer {
     this.worker?.terminate();
     this.worker = undefined;
     this.engine = undefined;
+    this.loadedModel = "";
   }
   async cached(model: string) {
     return hasModelInCache(model, this.appConfig);

@@ -3,6 +3,7 @@ import type { WebSource } from "./search";
 import { actions, type Action } from "./actions";
 export interface WritingRequest {
   text: string;
+  reasoning?: boolean;
   webSources?: WebSource[];
   action: Action;
   terms: string;
@@ -74,9 +75,15 @@ export function missingTerms(
 
 // UTF-8 byte count is a conservative upper bound for these byte-level tokenizers.
 // Avoid pretending an approximate character/token ratio is an exact token count.
+export function outputTokenLimit(request: WritingRequest) {
+  return request.mode === "chat" && request.reasoning ? 2048 : 1200;
+}
 export function prepareMessages(request: WritingRequest) {
   const messages = buildMessages(request);
-  const budget = Math.max(0, (request.contextWindow ?? 4096) - 1200 - 128);
+  const budget = Math.max(
+    0,
+    (request.contextWindow ?? 4096) - outputTokenLimit(request) - 128,
+  );
   const cost = (message: ChatCompletionMessageParam) =>
     new TextEncoder().encode(String(message.content ?? "")).length + 16;
   const system = messages[0];

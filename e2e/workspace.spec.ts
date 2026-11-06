@@ -29,15 +29,15 @@ test("loads desktop and mobile without overflow or model download", async ({
   }
   await page.getByRole("button", { name: "Write", exact: true }).click();
   await page.getByLabel("Writing tools", { exact: true }).click();
-  await page
-    .getByText("Writing preferences · optional", { exact: true })
-    .click();
-  await page.getByLabel("Protected terms").fill("Acme");
-  await page.getByLabel("Custom instruction").fill("Be direct");
+  await expect(page.getByText("Writing preferences · optional")).toHaveCount(0);
+  await expect(page.getByLabel("Protected terms")).toHaveCount(0);
+  await expect(page.getByLabel("Custom instruction")).toHaveCount(0);
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    await expect(page.getByLabel("Protected terms")).toBeInViewport();
-    await expect(page.getByLabel("Custom instruction")).toBeInViewport();
+    await expect(
+      page.getByRole("button", { name: "Fix grammar", exact: true }),
+    ).toBeInViewport();
+    await expect(page.getByLabel("More writing actions")).toBeInViewport();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -97,7 +97,7 @@ test("expanded model catalog keeps actions separated and reachable", async ({
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.getByLabel("Models", { exact: true }).click();
-    await expect(page.getByRole("radio")).toHaveCount(6);
+    await expect(page.getByRole("radio")).toHaveCount(7);
     await page.getByRole("radio", { name: /Phi 3.5 Mini/ }).check();
     await expect(
       page.getByRole("radio", { name: /Phi 3.5 Mini/ }),

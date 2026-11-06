@@ -2,7 +2,7 @@ import { useDismissibleDetails } from "./useDismissibleDetails";
 import { LoadingStatus } from "./LoadingStatus";
 import { Button } from "./Button";
 import { useEffect, useRef, useState } from "react";
-import { models } from "./models";
+import { models, supportsReasoning } from "./models";
 import type { Writer } from "./inference";
 import { Icon } from "./Icon";
 export function ModelPicker({
@@ -18,7 +18,13 @@ export function ModelPicker({
   onUnload,
   autoLoad,
   onAutoLoad,
+  reasoning,
+  reasoningAllowed,
+  onReasoning,
 }: {
+  reasoning: boolean;
+  reasoningAllowed: boolean;
+  onReasoning: (value: boolean) => void;
   autoLoad: boolean;
   onAutoLoad: (value: boolean) => void;
   writer: Writer;
@@ -194,6 +200,17 @@ export function ModelPicker({
             Delete downloaded model
           </Button>
         </div>
+        {supportsReasoning(model) && (
+          <label className="reasoning-setting">
+            <input
+              type="checkbox"
+              checked={reasoning}
+              disabled={busy || !reasoningAllowed}
+              onChange={(event) => onReasoning(event.target.checked)}
+            />
+            Reasoning <small>Chat only · may take longer</small>
+          </label>
+        )}
         <label>
           <input
             type="checkbox"

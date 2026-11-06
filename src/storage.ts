@@ -8,6 +8,10 @@ function validMessage(value: unknown): value is Message {
   const m = value as Message;
   return (
     typeof m.id === "string" &&
+    (m.reasoning === undefined || typeof m.reasoning === "string") &&
+    (m.reasoningEnabled === undefined ||
+      typeof m.reasoningEnabled === "boolean") &&
+    (m.thinking === undefined || typeof m.thinking === "boolean") &&
     (m.webSearch === undefined || typeof m.webSearch === "boolean") &&
     (m.webSources === undefined ||
       (Array.isArray(m.webSources) &&
@@ -96,7 +100,7 @@ export function exportMarkdown(chat: Conversation) {
     chat.messages
       .map(
         (message) =>
-          `## ${message.role === "user" ? "You" : (message.modelLabel ?? "Assistant")}${message.state && message.state !== "complete" ? ` (${message.state})` : ""}\n\n${messageText(message)}${message.webSources?.length ? "\n\nSources:\n" + message.webSources.map((s, i) => `${i + 1}. ${s.title}: ${s.url}`).join("\n") : ""}`,
+          `## ${message.role === "user" ? "You" : (message.modelLabel ?? "Assistant")}${message.state && message.state !== "complete" ? ` (${message.state})` : ""}\n\n${message.reasoning ? `### Thinking\n\n${message.reasoning}\n\n### Answer\n\n` : ""}${messageText(message)}${message.webSources?.length ? "\n\nSources:\n" + message.webSources.map((s, i) => `${i + 1}. ${s.title}: ${s.url}`).join("\n") : ""}`,
       )
       .join("\n\n---\n\n")
   );
