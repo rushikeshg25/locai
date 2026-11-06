@@ -436,7 +436,8 @@ export default function App({
     });
   }
   let contextLabel = "";
-  if (text.trim()) {
+  let contextUsage = 0;
+  if (text.trim() || chat.messages.length) {
     try {
       const budget = prepareMessages({
         reasoning:
@@ -451,6 +452,7 @@ export default function App({
         history: conversationHistory(resend ?? chat.messages),
         contextWindow: 4096,
       });
+      contextUsage = budget.used / budget.budget;
       contextLabel = `Context estimate: ${budget.used} / ${budget.budget} byte units${budget.omitted ? ` · ${budget.omitted} older messages excluded` : ""}`;
     } catch (cause) {
       contextLabel = (cause as Error).message;
@@ -1153,6 +1155,7 @@ export default function App({
                   model={model}
                   status={searching ? "searching" : session.status}
                   progress={session.progress}
+                  contextUsage={contextUsage}
                   required={modelRequired}
                   supported={supported}
                   autoLoad={autoLoad}
@@ -1177,7 +1180,7 @@ export default function App({
                       setFeedback("Could not remember this model selection.");
                   }}
                   onLoad={() => void session.load(model)}
-                  onRemove={() => void session.remove(model)}
+                  onRemove={(id) => void session.remove(id)}
                   onUnload={() => session.stop("")}
                 />
                 {busy ? (

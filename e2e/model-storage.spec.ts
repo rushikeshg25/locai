@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { installBrowserModel } from "./browser-model";
-test("saved model detection survives reload and deletion removes only the selected model", async ({
+test("saved model detection survives reload and deleting a row removes only that model, not the selection", async ({
   page,
 }) => {
   await installBrowserModel(page);
@@ -31,14 +31,15 @@ test("saved model detection survives reload and deletion removes only the select
     page.getByText("Downloaded on this device", { exact: true }),
   ).toHaveCount(2);
   page.once("dialog", (dialog) => dialog.dismiss());
-  await page.getByRole("button", { name: "Delete downloaded model" }).click();
+  await page.getByRole("button", { name: "Delete Qwen 2.5 0.5B" }).click();
   await expect(
     page.getByRole("button", { name: "Load from device", exact: true }),
   ).toBeEnabled();
+  await page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }).check();
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Delete downloaded model" }).click();
+  await page.getByRole("button", { name: "Delete Qwen 2.5 0.5B" }).click();
   await expect(
-    page.getByRole("button", { name: "Download model", exact: true }),
+    page.getByRole("button", { name: "Load from device", exact: true }),
   ).toBeEnabled();
   expect(
     await page.evaluate(async (bases) => {

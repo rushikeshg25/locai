@@ -182,7 +182,7 @@ test("sending without a model keeps the draft and offers model setup", async ({
   await expect(page.locator(".assistant")).toHaveCount(1);
 });
 
-test("model loading uses a fixed-size ring without moving the composer", async ({
+test("model loading uses a row progress ring without moving the composer", async ({
   page,
 }) => {
   await installBrowserModel(page, 2000);
@@ -195,13 +195,17 @@ test("model loading uses a fixed-size ring without moving the composer", async (
     await page.getByLabel("Models", { exact: true }).click();
     await page.getByRole("button", { name: "Download model" }).click();
     await expect(
-      page.locator(".model-settings summary").getByRole("progressbar"),
+      page
+        .locator(".model-row-action")
+        .getByRole("progressbar", { name: "Loading model" }),
     ).toBeVisible();
     expect((await input.boundingBox())!.y).toBe(before!.y);
     expect(await page.locator(".model-name").boundingBox()).toEqual(nameBefore);
     await expect(
-      page.locator(".model-panel").getByRole("progressbar"),
-    ).toHaveCount(0);
+      page
+        .locator(".model-settings summary")
+        .getByRole("progressbar", { name: "Estimated context usage" }),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Model ready", includeHidden: true }),
     ).toBeAttached();

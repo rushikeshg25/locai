@@ -462,20 +462,10 @@ header {
 .model-controls button {
   font-size: 12px;
 }
-.model-controls .model-delete {
-  flex-basis: 100%;
-  justify-content: flex-start;
-  padding-inline: 0;
-  border-inline-width: 0;
-}
-.model-controls .model-delete:not(:disabled):hover {
-  background: transparent;
-  color: var(--danger);
-}
 .model-panel .muted {
   margin: 12px 0;
 }
-.model-panel label:not(.model-option) {
+.model-panel label:not(.model-option):not(.model-choice) {
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr);
   align-items: center;
@@ -1413,7 +1403,7 @@ input[type="radio"] {
     min-height: 44px;
     align-content: center;
   }
-  .model-panel label:not(.model-option) {
+  .model-panel label:not(.model-option):not(.model-choice) {
     min-height: 44px;
     align-content: center;
   }
@@ -1484,4 +1474,24 @@ input[type="radio"] {
   .model-progress.indeterminate {
     animation: none;
   }
+}
+
+.model-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.model-choice > span {
+  min-width: 0;
+}
+.model-row-action {
+  width: 40px;
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
 }

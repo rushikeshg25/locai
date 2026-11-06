@@ -145,7 +145,7 @@ The model dropdown keeps progress and actions separate from the composer:
 - **Download model** obtains missing files.
 - **Load from device** reuses downloaded weights.
 - **Unload** releases the running worker without deleting downloaded files.
-- **Delete downloaded model** asks for confirmation, then removes the selected model's cached files. It does not delete chats.
+- The bin button beside a downloaded model asks for confirmation, then removes the selected model's cached files. It does not delete chats.
 - **Storage & details** shows storage estimates and offers **Keep downloads on device**, which requests persistent storage. The browser decides whether to grant it.
 
 Switching models unloads the current worker. Initial downloads remain explicit; automatic startup loading only begins when the selected weights are detected in cache.

@@ -10,6 +10,7 @@ export function ModelPicker({
   model,
   status,
   progress,
+  contextUsage,
   required = false,
   supported,
   onSelect,
@@ -35,7 +36,8 @@ export function ModelPicker({
   supported: boolean | null;
   onSelect: (id: string) => void;
   onLoad: () => void;
-  onRemove: () => void;
+  onRemove: (id: string) => void;
+  contextUsage: number;
   onUnload: () => void;
 }) {
   const picker = useRef<HTMLDetailsElement>(null);
@@ -76,11 +78,11 @@ export function ModelPicker({
         aria-label="Models"
         title="Select, download or manage writing models"
       >
-        {status === "loading" ? (
-          <LoadingStatus progress={progress} />
-        ) : (
-          <Icon name="model" />
-        )}
+        <LoadingStatus
+          progress={{ value: contextUsage, message: "" }}
+          label="Estimated context usage"
+          indeterminate={false}
+        />
         <span className="model-name">
           {models.find((item) => item.id === model)?.label ?? model}
         </span>
@@ -118,30 +120,54 @@ export function ModelPicker({
           className="model-catalog"
         >
           {modelsBySize.map((item) => (
-            <label key={item.id} className="model-option">
-              <input
-                type="radio"
-                name="model"
-                checked={item.id === model}
-                disabled={busy}
-                onChange={() => onSelect(item.id)}
-              />
-              <span>
-                <strong>{item.label}</strong>
-                <small>
-                  {item.download} · {item.memory}
-                </small>
-                <small>
-                  {item.id === model && status === "ready"
-                    ? "Loaded in memory"
-                    : cache[item.id] === true
-                      ? "Downloaded on this device"
-                      : cache[item.id] === false
-                        ? "Not downloaded"
-                        : "Checking cache / unavailable"}
-                </small>
+            <div key={item.id} className="model-option">
+              <label className="model-choice">
+                <input
+                  type="radio"
+                  name="model"
+                  checked={item.id === model}
+                  disabled={busy}
+                  onChange={() => onSelect(item.id)}
+                />
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>
+                    {item.download} · {item.memory}
+                  </small>
+                  <small>
+                    {item.id === model && status === "ready"
+                      ? "Loaded in memory"
+                      : cache[item.id] === true
+                        ? "Downloaded on this device"
+                        : cache[item.id] === false
+                          ? "Not downloaded"
+                          : "Checking cache / unavailable"}
+                  </small>
+                </span>
+              </label>
+              <span className="model-row-action">
+                {item.id === model && status === "loading" ? (
+                  <LoadingStatus progress={progress} />
+                ) : cache[item.id] === true ? (
+                  <Button
+                    className="secondary icon-button"
+                    aria-label={`Delete ${item.label}`}
+                    title={`Delete ${item.label}`}
+                    disabled={busy}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Delete downloaded files for ${item.label}? You will need to download this model again. Your chats will be kept.`,
+                        )
+                      )
+                        onRemove(item.id);
+                    }}
+                  >
+                    <Icon name="clear" />
+                  </Button>
+                ) : null}
               </span>
-            </label>
+            </div>
           ))}
         </div>
         {cache[model] === null && (
@@ -174,23 +200,6 @@ export function ModelPicker({
             onClick={onUnload}
           >
             Unload
-          </Button>
-          <Button
-            className="secondary model-delete"
-            disabled={busy}
-            onClick={() => {
-              const label =
-                models.find((item) => item.id === model)?.label ?? model;
-              if (
-                window.confirm(
-                  `Delete downloaded files for ${label}? You will need to download this model again. Your chats will be kept.`,
-                )
-              )
-                onRemove();
-            }}
-          >
-            <Icon name="clear" />
-            Delete downloaded model
           </Button>
         </div>
         {supportsReasoning(model) && (

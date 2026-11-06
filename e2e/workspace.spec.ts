@@ -115,7 +115,7 @@ test("expanded model catalog keeps actions separated and reachable", async ({
     const controls = await page.locator(".model-controls").boundingBox();
     expect(controls!.y - (list!.y + list!.height)).toBeGreaterThanOrEqual(16);
     await expect(
-      page.getByRole("button", { name: "Delete downloaded model" }),
+      page.getByRole("button", { name: "Download model", exact: true }),
     ).toBeInViewport();
     await page.screenshot({ path: `/tmp/model-picker-${width}.png` });
     await page.keyboard.press("Escape");
