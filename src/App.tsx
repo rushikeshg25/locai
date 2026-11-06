@@ -12,13 +12,7 @@ import {
   useState,
   type SetStateAction,
 } from "react";
-import {
-  actions,
-  primaryActions,
-  extraActions,
-  inputError,
-  type Action,
-} from "./actions";
+import { actions, inputError, type Action } from "./actions";
 import { LocalWriter, type Writer } from "./inference";
 import { splitReasoning } from "./reasoning";
 import { checkGPU, models, supportsReasoning } from "./models";
@@ -57,11 +51,7 @@ export default function App({
     () => !(window.matchMedia?.("(max-width: 900px)").matches ?? false),
   );
   const chatMenu = useRef<HTMLDetailsElement>(null);
-  const writingTools = useRef<HTMLDetailsElement>(null);
-  const contextMenu = useRef<HTMLDetailsElement>(null);
   useDismissibleDetails(chatMenu);
-  useDismissibleDetails(writingTools);
-  useDismissibleDetails(contextMenu);
   const [browserWriter] = useState(() => supplied ?? new LocalWriter());
   const writer = browserWriter;
   const [autoLoad, setAutoLoad] = useState(
@@ -91,7 +81,7 @@ export default function App({
   const [active, setActive] = useState("");
   const chat = chats.find((item) => item.id === active) ?? chats[0];
   const [text, setText] = useState("");
-  const [action, setAction] = useState<Action>("grammar");
+  const action: Action = "grammar";
   const [feedback, setFeedback] = useState(saved.warning);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const attachmentRequest = useRef(0);
@@ -267,7 +257,7 @@ export default function App({
     }));
   }
   function newChat() {
-    const next = newConversation(chat.mode);
+    const next = newConversation();
     setChats((items) => [next, ...items]);
     setActive(next.id);
     setText("");
@@ -292,7 +282,7 @@ export default function App({
     prefix = resend ?? chat.messages,
     fork = resend !== null,
     attached = attachments,
-    requestMode = chat.mode,
+    requestMode: "chat" | "write" = "chat",
     requestAction = action,
     requestTerms = "",
     requestInstruction = "",
@@ -435,17 +425,13 @@ export default function App({
       truncated: result.truncated,
     });
   }
-  let contextLabel = "";
   let contextUsage = 0;
   if (text.trim() || chat.messages.length) {
     try {
       const budget = prepareMessages({
-        reasoning:
-          reasoningEnabled &&
-          supportsReasoning(selected.id) &&
-          chat.mode === "chat",
+        reasoning: reasoningEnabled && supportsReasoning(selected.id),
         text: messageText({ content: text, attachments }),
-        mode: chat.mode,
+        mode: "chat",
         action,
         terms: "",
         instruction: "",
@@ -453,9 +439,9 @@ export default function App({
         contextWindow: 4096,
       });
       contextUsage = budget.used / budget.budget;
-      contextLabel = `Context estimate: ${budget.used} / ${budget.budget} byte units${budget.omitted ? ` · ${budget.omitted} older messages excluded` : ""}`;
-    } catch (cause) {
-      contextLabel = (cause as Error).message;
+    } catch {
+      // Sending still reports the full budget error; show a full ring meanwhile.
+      contextUsage = 1;
     }
   }
   async function copy(content: string) {
@@ -796,7 +782,6 @@ export default function App({
                           ...item,
                           mode: message.mode ?? "chat",
                         }));
-                        setAction(message.action ?? "grammar");
                         setResend(chat.messages.slice(0, index));
                         composer.current?.focus();
                       }}
@@ -837,7 +822,7 @@ export default function App({
                         title="Continue from this reply in a new conversation branch"
                         onClick={() => {
                           const branch = {
-                            ...newConversation(chat.mode),
+                            ...newConversation(),
                             saved: chat.saved,
                             title: `${chat.title.slice(0, 36)} (branch)`,
                             messages: chat.messages.slice(0, index + 1),
@@ -930,99 +915,6 @@ export default function App({
           }}
         />
         <section className="compose-area" aria-label="Message composer">
-          <div className="compose-options">
-            <div className="mode-switch" role="group" aria-label="Mode">
-              {(["chat", "write"] as const).map((mode) => (
-                <Button
-                  key={mode}
-                  className="secondary"
-                  aria-pressed={chat.mode === mode}
-                  disabled={busy}
-                  onClick={() => update(chat.id, (item) => ({ ...item, mode }))}
-                >
-                  {mode === "chat" ? "Chat" : "Write"}
-                </Button>
-              ))}
-            </div>
-            {chat.mode === "write" && (
-              <details className="writing-tools" ref={writingTools}>
-                <summary aria-label="Writing tools">
-                  <Icon name={action} />
-                  <span>{actions[action].label}</span>
-                  <Icon name="chevron" />
-                </summary>
-                <div className="writing-tools-panel">
-                  <div className="panel-heading">
-                    <h2>Writing tools</h2>
-                    <Button
-                      className="secondary icon-button"
-                      aria-label="Close writing tools"
-                      onClick={() => {
-                        if (writingTools.current)
-                          writingTools.current.open = false;
-                        writingTools.current?.querySelector("summary")?.focus();
-                      }}
-                    >
-                      <Icon name="close" />
-                    </Button>
-                  </div>
-                  <div
-                    className="actions"
-                    role="group"
-                    aria-label="Writing actions"
-                  >
-                    {primaryActions.map((key) => (
-                      <Button
-                        key={key}
-                        className="secondary"
-                        aria-pressed={key === action}
-                        title={actions[key].instruction}
-                        disabled={busy}
-                        onClick={() => setAction(key)}
-                      >
-                        <Icon name={key} />
-                        {actions[key].label}
-                      </Button>
-                    ))}
-                    <select
-                      aria-label="More writing actions"
-                      disabled={busy}
-                      value={extraActions.includes(action) ? action : ""}
-                      onChange={(event) =>
-                        setAction(event.target.value as Action)
-                      }
-                    >
-                      <option value="" disabled>
-                        More
-                      </option>
-                      {extraActions.map((key) => (
-                        <option key={key} value={key}>
-                          {actions[key].label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </details>
-            )}
-            {contextLabel && (
-              <details className="context-budget" ref={contextMenu}>
-                <summary
-                  aria-label="Context budget"
-                  title="Message context budget"
-                >
-                  <Icon name="info" />
-                </summary>
-                <div className="context-budget-panel">
-                  <p>{contextLabel}</p>
-                  <p>
-                    A conservative UTF-8 byte estimate, not an exact token
-                    count. Space is reserved for the reply.
-                  </p>
-                </div>
-              </details>
-            )}
-          </div>
           {resend !== null && (
             <div className="draft-note">
               Editing a previous request · original conversation will be kept.
@@ -1074,9 +966,7 @@ export default function App({
                   void send();
                 }
               }}
-              placeholder={
-                chat.mode === "chat" ? "Message…" : "Paste or write a draft…"
-              }
+              placeholder="Message…"
             />
             {attachments.length > 0 && (
               <div className="attachments">
@@ -1133,19 +1023,17 @@ export default function App({
               >
                 <Icon name="attach" />
               </Button>
-              {chat.mode === "chat" && (
-                <Button
-                  className="secondary web-search-toggle"
-                  aria-label="Search the web"
-                  aria-pressed={webSearch}
-                  title="Search the web · sends this question to search engines"
-                  disabled={busy}
-                  onClick={() => setWebSearch(!webSearch)}
-                >
-                  <Icon name="search" />
-                  Web
-                </Button>
-              )}
+              <Button
+                className="secondary web-search-toggle"
+                aria-label="Search the web"
+                aria-pressed={webSearch}
+                title="Search the web · sends this question to search engines"
+                disabled={busy}
+                onClick={() => setWebSearch(!webSearch)}
+              >
+                <Icon name="search" />
+                Web
+              </Button>
               <span id="composer-shortcuts" className="sr-only">
                 Enter to send · Ctrl/⌘ + Enter or Shift + Enter for a new line
               </span>
@@ -1160,7 +1048,7 @@ export default function App({
                   supported={supported}
                   autoLoad={autoLoad}
                   reasoning={reasoningEnabled}
-                  reasoningAllowed={chat.mode === "chat"}
+                  reasoningAllowed={true}
                   onReasoning={(value) => {
                     setReasoningEnabled(value);
                     if (!setPreference("reasoning", String(value)))

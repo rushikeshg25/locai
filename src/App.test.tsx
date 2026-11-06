@@ -85,19 +85,20 @@ it("starts an empty chat without unloading the model", async () => {
     expect.any(Function),
   );
 });
-it("writes and reviews every action without including chat history", async () => {
+it("handles writing requests directly in chat without a mode selector", async () => {
   const writer = setup();
   await ready();
-  fireEvent.click(screen.getByRole("button", { name: /^Write$/ }));
-  fireEvent.change(screen.getByLabelText("More writing actions"), {
-    target: { value: "warmer" },
-  });
-  await send("Send the report.");
+  expect(
+    screen.queryByRole("button", { name: "Write" }),
+  ).not.toBeInTheDocument();
+  await send("Make this warmer: Send the report.");
   expect(writer.generate).toHaveBeenLastCalledWith(
-    expect.objectContaining({ mode: "write", action: "warmer" }),
+    expect.objectContaining({
+      mode: "chat",
+      text: "Make this warmer: Send the report.",
+    }),
     expect.any(Function),
   );
-  expect(screen.getByText("Review changes")).toBeInTheDocument();
 });
 it("preserves failed messages and forks a retry", async () => {
   const writer = setup();
@@ -326,7 +327,7 @@ it("keeps legacy retry metadata without exposing writing preference fields", asy
   );
   await send("Make this more direct: Acme might ship Friday.");
   expect(writer.generate).toHaveBeenLastCalledWith(
-    expect.objectContaining({ terms: "", instruction: "" }),
+    expect.objectContaining({ mode: "chat", terms: "", instruction: "" }),
     expect.any(Function),
   );
 });

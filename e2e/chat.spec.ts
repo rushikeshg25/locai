@@ -71,7 +71,6 @@ test("light/dark composer and narrow layout remain usable", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Write", exact: true }).click();
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     for (const theme of ["dark", "light"]) {
@@ -238,32 +237,21 @@ test("collapsed desktop sidebar keeps chat and search actions available", async 
   await expect(page.getByRole("button", { name: "Open chats" })).toBeVisible();
 });
 
-test("Chat and Write keep the composer fixed while writing tools overlay", async ({
+test("a single chat composer keeps drafts while opening model details", async ({
   page,
 }) => {
   await page.goto("/");
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.getByRole("button", { name: "Chat", exact: true }).click();
     const input = page.getByLabel("Your text");
-    await input.fill("Keep my draft");
+    await input.fill("Rewrite this politely: Send the report.");
     const before = await input.boundingBox();
-    await page.getByRole("button", { name: "Write", exact: true }).click();
-    expect(await input.boundingBox()).toEqual(before);
-    await page.getByLabel("Writing tools", { exact: true }).click();
     await expect(
-      page.getByRole("button", { name: "Fix grammar", exact: true }),
-    ).toBeInViewport();
+      page.getByRole("group", { name: "Mode", exact: true }),
+    ).toHaveCount(0);
+    await page.getByLabel("Models", { exact: true }).click();
     expect(await input.boundingBox()).toEqual(before);
     await page.keyboard.press("Escape");
-    await expect(
-      page.getByLabel("Writing tools", { exact: true }),
-    ).toBeFocused();
-    await page.getByLabel("Writing tools", { exact: true }).click();
-    await input.click();
-    await expect(page.locator(".writing-tools")).not.toHaveAttribute("open");
-    await page.getByRole("button", { name: "Chat", exact: true }).click();
-    expect(await input.boundingBox()).toEqual(before);
-    await expect(input).toHaveValue("Keep my draft");
+    await expect(input).toHaveValue("Rewrite this politely: Send the report.");
   }
 });

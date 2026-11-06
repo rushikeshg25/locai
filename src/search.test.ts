@@ -77,7 +77,7 @@ it("fits complete sources into context and separates untrusted data from instruc
     action: "grammar",
     terms: "",
     instruction: "",
-    contextWindow: 2200,
+    contextWindow: 2800,
   };
   const fitted = fitSearch(
     request,

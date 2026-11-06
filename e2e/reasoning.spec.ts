@@ -53,7 +53,7 @@ test("reasoning streams separately, persists, and stays out of later context", a
     "Check the arithmetic.",
   );
 });
-test("reasoning can be disabled and writing always uses non-thinking generation", async ({
+test("reasoning preference applies to direct writing requests too", async ({
   page,
 }) => {
   await installBrowserModel(page, 0, ["<think>\n\n</think>\nAnswer"]);
@@ -83,11 +83,9 @@ test("reasoning can be disabled and writing always uses non-thinking generation"
   expect((await modelRequests(page))[1].extra_body).toEqual({
     enable_thinking: false,
   });
-  await page.getByRole("button", { name: "Write", exact: true }).click();
   await page.getByLabel("Models", { exact: true }).click();
-  await expect(
-    page.getByRole("checkbox", { name: /Reasoning/ }),
-  ).toBeDisabled();
+  await expect(page.getByRole("checkbox", { name: /Reasoning/ })).toBeEnabled();
+  await page.getByRole("checkbox", { name: /Reasoning/ }).uncheck();
   await page.keyboard.press("Escape");
   await page.getByLabel("Your text").fill("Fix this sentence.");
   await page.getByLabel("Your text").press("Enter");

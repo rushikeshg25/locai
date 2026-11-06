@@ -18,14 +18,13 @@ test("real model generates locally and reloads offline", async ({
   ).toBeAttached({
     timeout: 480_000,
   });
-  await page.getByRole("button", { name: "Write", exact: true }).click();
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
   await page
     .getByLabel("Your text")
-    .fill("We might delivers the PostgreSQL update on Friday.");
+    .fill("Fix grammar: We might delivers the PostgreSQL update on Friday.");
   await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.locator(".assistant .markdown")).not.toBeEmpty({
+  await expect(page.locator(".assistant .markdown").last()).not.toBeEmpty({
     timeout: 120_000,
   });
   await expect(
@@ -45,10 +44,11 @@ test("real model generates locally and reloads offline", async ({
   ).toBeAttached({
     timeout: 120_000,
   });
-  await page.getByRole("button", { name: "Write", exact: true }).click();
-  await page.getByLabel("Your text").fill("This are a short message.");
+  await page
+    .getByLabel("Your text")
+    .fill("Fix grammar: This are a short message.");
   await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.locator(".assistant .markdown")).not.toBeEmpty({
+  await expect(page.locator(".assistant .markdown").last()).not.toBeEmpty({
     timeout: 120_000,
   });
   await expect(

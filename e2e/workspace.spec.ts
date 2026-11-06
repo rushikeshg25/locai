@@ -27,23 +27,14 @@ test("loads desktop and mobile without overflow or model download", async ({
       ),
     ).toBe(true);
   }
-  await page.getByRole("button", { name: "Write", exact: true }).click();
-  await page.getByLabel("Writing tools", { exact: true }).click();
-  await expect(page.getByText("Writing preferences · optional")).toHaveCount(0);
+  await expect(
+    page.getByRole("group", { name: "Mode", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Writing tools", { exact: true })).toHaveCount(
+    0,
+  );
   await expect(page.getByLabel("Protected terms")).toHaveCount(0);
   await expect(page.getByLabel("Custom instruction")).toHaveCount(0);
-  for (const width of [1440, 390]) {
-    await page.setViewportSize({ width, height: 900 });
-    await expect(
-      page.getByRole("button", { name: "Fix grammar", exact: true }),
-    ).toBeInViewport();
-    await expect(page.getByLabel("More writing actions")).toBeInViewport();
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
-  }
   await expect(
     page.getByRole("button", { name: "Send message" }),
   ).toBeEnabled();

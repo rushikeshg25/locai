@@ -7,13 +7,9 @@ test("menus dismiss when keyboard focus leaves and close returns focus", async (
   await page.getByLabel("Models", { exact: true }).click();
   await page.getByLabel("Your text").focus();
   await expect(page.locator(".model-settings")).not.toHaveAttribute("open");
-  await page.getByRole("button", { name: "Write", exact: true }).click();
-  await page.getByLabel("Writing tools", { exact: true }).click();
-  await page.getByRole("button", { name: "Close writing tools" }).click();
-  await expect(page.getByLabel("Writing tools", { exact: true })).toBeFocused();
-  await page.getByLabel("Writing tools", { exact: true }).click();
-  await page.keyboard.press("Shift+Tab");
-  await expect(page.locator(".writing-tools")).not.toHaveAttribute("open");
+  await page.getByLabel("Models", { exact: true }).click();
+  await page.getByRole("button", { name: "Close models" }).click();
+  await expect(page.getByLabel("Models", { exact: true })).toBeFocused();
   await page.getByLabel("Chat options").click();
   await page.getByLabel("Your text").focus();
   await expect(page.locator(".chat-menu")).not.toHaveAttribute("open");
@@ -55,8 +51,6 @@ test("panels, tooltips and composer fit small, landscape and desktop viewports",
       await page.keyboard.press("Escape");
       if (width <= 600) {
         for (const name of [
-          "Chat",
-          "Write",
           "Attach text files",
           "Search the web",
           "Send message",
@@ -94,7 +88,7 @@ test("keyboard skip link and reduced motion remain usable", async ({
   await page.keyboard.press("Enter");
   await expect(page.getByLabel("Your text")).toBeFocused();
   await expect(
-    page.getByRole("button", { name: "Write", exact: true }),
+    page.getByRole("button", { name: "Attach text files", exact: true }),
   ).toHaveCSS("transition-duration", "0s");
 });
 
