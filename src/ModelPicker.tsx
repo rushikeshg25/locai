@@ -104,12 +104,13 @@ export function ModelPicker({
         {status === "loading" && progress && (
           <LoadingStatus progress={progress} />
         )}
-        <p className="muted">
-          {supported === true
-            ? "WebGPU available"
-            : "WebGPU unavailable or checking"}{" "}
-          · Small models can make mistakes on complex requests.
-        </p>
+        {supported !== true && (
+          <p className="muted">
+            {supported === null
+              ? "Checking device…"
+              : "WebGPU unavailable on this device."}
+          </p>
+        )}
         <div
           role="radiogroup"
           aria-label="Writing model"
@@ -133,7 +134,7 @@ export function ModelPicker({
                   {item.id === model && status === "ready"
                     ? "Loaded in memory"
                     : cache[item.id] === true
-                      ? "Weights downloaded"
+                      ? "Downloaded on this device"
                       : cache[item.id] === false
                         ? "Not downloaded"
                         : "Checking cache / unavailable"}
@@ -142,20 +143,29 @@ export function ModelPicker({
             </label>
           ))}
         </div>
-        <p className="muted">
-          Offline use requires weights, tokenizer, config and runtime files.
-        </p>
+        {cache[model] === null && (
+          <p role="status">
+            Cannot check saved files. Browser storage may be unavailable.
+          </p>
+        )}
         <div className="model-controls">
           <Button
-            disabled={!supported || busy || status === "ready"}
+            disabled={
+              !supported ||
+              busy ||
+              status === "ready" ||
+              cache[model] === undefined
+            }
             onClick={onLoad}
           >
             <Icon name="download" />
             {status === "ready"
               ? "Model ready"
-              : cache[model]
-                ? "Load selected model"
-                : "Download / load model"}
+              : cache[model] === undefined
+                ? "Checking downloads…"
+                : cache[model] === true
+                  ? "Load from device"
+                  : "Download model"}
           </Button>
           <Button
             className="secondary"
@@ -166,11 +176,20 @@ export function ModelPicker({
           </Button>
           <Button
             className="secondary"
-            disabled={busy || cache[model] !== true}
-            onClick={onRemove}
+            disabled={busy}
+            onClick={() => {
+              const label =
+                models.find((item) => item.id === model)?.label ?? model;
+              if (
+                window.confirm(
+                  `Delete downloaded files for ${label}? You will need to download this model again. Your chats will be kept.`,
+                )
+              )
+                onRemove();
+            }}
           >
             <Icon name="clear" />
-            Remove model cache
+            Delete downloaded model
           </Button>
         </div>
         <label>
@@ -180,12 +199,17 @@ export function ModelPicker({
             disabled={busy}
             onChange={(event) => onAutoLoad(event.target.checked)}
           />{" "}
-          Automatically load downloaded weights on startup
+          Auto-load downloaded model
         </label>
-        <p className="muted">
-          Loading may still need internet for missing runtime files.
-        </p>
-        <StorageInfo refresh={status} />
+        <details className="model-storage-details">
+          <summary>Storage &amp; details</summary>
+          <p className="muted">
+            Saved weights load into GPU memory each time you open the app.
+            Missing runtime files may need internet. Clearing site data or
+            browser eviction removes downloads.
+          </p>
+          <StorageInfo refresh={status} />
+        </details>
       </section>
     </details>
   );

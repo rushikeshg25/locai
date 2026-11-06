@@ -30,7 +30,7 @@ function setup(supported = true, cached = false) {
 }
 async function ready() {
   fireEvent.click(screen.getByLabelText("Models"));
-  const load = screen.getByRole("button", { name: "Download / load model" });
+  const load = await screen.findByRole("button", { name: "Download model" });
   await waitFor(() => expect(load).toBeEnabled());
   fireEvent.click(load);
   await screen.findByRole("button", { name: "Model ready" });
@@ -48,9 +48,7 @@ it("requires explicit loading and disables unsupported devices", async () => {
   const writer = setup(false);
   await screen.findByText(/WebGPU is unavailable/);
   fireEvent.click(screen.getByLabelText("Models"));
-  expect(
-    screen.getByRole("button", { name: "Download / load model" }),
-  ).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Download model" })).toBeDisabled();
   expect(writer.load).not.toHaveBeenCalled();
 });
 it("defaults to chat and sends prior completed messages", async () => {
@@ -211,8 +209,7 @@ it("turns selected draft text into a focused writing request", async () => {
     ),
   );
 });
-it("loads cached weights automatically only after opting in", async () => {
-  localStorage.setItem("local-writer-auto-load", "true");
+it("loads downloaded weights automatically by default", async () => {
   const writer = setup(true, true);
   await waitFor(() => expect(writer.load).toHaveBeenCalledOnce());
 });
@@ -380,4 +377,18 @@ it("shows reply progress until generation completes", async () => {
   await waitFor(() =>
     expect(screen.queryByText("Responding…")).not.toBeInTheDocument(),
   );
+});
+
+it("respects disabling automatic model loading", async () => {
+  localStorage.setItem("local-writer-auto-load", "false");
+  const writer = setup(true, true);
+  fireEvent.click(screen.getByLabelText("Models"));
+  await screen.findByRole("button", { name: "Load from device" });
+  expect(writer.load).not.toHaveBeenCalled();
+});
+it("does not auto-download missing models", async () => {
+  const writer = setup(true, false);
+  fireEvent.click(screen.getByLabelText("Models"));
+  await screen.findByRole("button", { name: "Download model" });
+  expect(writer.load).not.toHaveBeenCalled();
 });

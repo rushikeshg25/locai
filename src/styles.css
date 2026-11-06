@@ -1082,3 +1082,20 @@ del {
   border-color: var(--focus);
   border-radius: 8px;
 }
+
+.model-storage-details {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.model-settings .model-storage-details > summary {
+  display: list-item;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 0;
+  list-style: revert;
+  max-width: none;
+}
+.model-settings .model-storage-details > summary::-webkit-details-marker {
+  display: inline;
+}

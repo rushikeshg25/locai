@@ -56,14 +56,14 @@ This value is public client configuration, not a secret. Changing it requires re
 
 ## Models and downloads
 
-Open **Models** beside Send. Browser models need HTTPS or localhost, a WebGPU-capable browser, and hardware acceleration. Model selection is remembered. Initial model downloads are explicit; optional automatic loading starts only if the selected weights are cached. Missing runtime/config/tokenizer files can still need internet.
+Open **Models** beside Send. Browser models need HTTPS or localhost, a WebGPU-capable browser, and hardware acceleration. Model selection is remembered. Initial model downloads are explicit; automatic loading is enabled by default and starts only if the selected weights are cached; turn it off with Auto-load downloaded model. Missing runtime/config/tokenizer files can still need internet.
 
 | Model         | Approximate weights | Estimated GPU memory |
 | ------------- | ------------------- | -------------------- |
 | Qwen 2.5 0.5B | 280 MB              | 945 MB               |
 | Qwen 2.5 1.5B | 870 MB              | 1.6 GB               |
 
-Runtime and browser overhead are additional. The picker distinguishes downloaded weights from a model loaded in memory, shows estimated site storage, and can request persistent browser storage. Unload frees the worker; Remove model cache deletes the selected WebLLM model files. Browser eviction, interrupted downloads, or missing runtime files can prevent offline use.
+Runtime and browser overhead are additional. The picker distinguishes downloaded weights from a model loaded in memory, shows estimated site storage, and can request persistent browser storage. Unload frees the worker; Delete downloaded model confirms before deleting the selected WebLLM model files. Browser eviction, interrupted downloads, or missing runtime files can prevent offline use.
 
 The Models dropdown contains loading progress, elapsed time, and a stalled-update hint without moving the composer. Sending before a model is loaded opens this dropdown with a warning and keeps the draft. The runtime does not expose byte progress for every phase, so an indeterminate bar is deliberate. Stop cancels loading; use Models to retry. Initialization times out after ten minutes and generation after two minutes.
 

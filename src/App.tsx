@@ -77,7 +77,7 @@ export default function App({
   const [browserWriter] = useState(() => supplied ?? new LocalWriter());
   const writer = browserWriter;
   const [autoLoad, setAutoLoad] = useState(
-    () => getPreference("auto-load", "false") === "true",
+    () => getPreference("auto-load", "true") === "true",
   );
   const autoAttempted = useRef(false);
   const session = useWriter(writer);

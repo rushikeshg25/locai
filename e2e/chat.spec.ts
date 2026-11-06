@@ -4,7 +4,7 @@ async function connect(page: Page) {
   await installBrowserModel(page);
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("button", { name: "Download / load model" }).click();
+  await page.getByRole("button", { name: "Download model" }).click();
   await expect(
     page.getByRole("button", { name: "Model ready", includeHidden: true }),
   ).toBeAttached();
@@ -176,7 +176,7 @@ test("sending without a model keeps the draft and offers model setup", async ({
   expect((await input.boundingBox())!.y).toBe(before!.y);
 
   await expect(page.locator(".model-settings")).toHaveAttribute("open", "");
-  await page.getByRole("button", { name: "Download / load model" }).click();
+  await page.getByRole("button", { name: "Download model" }).click();
   await expect(page.getByText("Load a model before sending")).toHaveCount(0);
   await expect(input).toHaveValue("Keep this draft");
   await page.getByRole("button", { name: "Send message" }).click();
@@ -193,7 +193,7 @@ test("model loading stays in its dropdown without moving the composer", async ({
     const input = page.getByLabel("Your text");
     const before = await input.boundingBox();
     await page.getByLabel("Models", { exact: true }).click();
-    await page.getByRole("button", { name: "Download / load model" }).click();
+    await page.getByRole("button", { name: "Download model" }).click();
     await expect(
       page.locator(".model-panel").getByRole("progressbar"),
     ).toBeVisible();

@@ -51,7 +51,7 @@ export function useWriter(writer: Writer) {
     setNotice("");
     setProgress({
       value: 0,
-      message: "Loading runtime files. Waiting for the first download update…",
+      message: "Preparing model. Reusing saved files where available…",
     });
     timer.current = setTimeout(
       () =>
