@@ -159,3 +159,17 @@ it("interrupts generation without unloading the model and keeps partial output",
   expect(result.current.status).toBe("ready");
   expect(result.current.output).toBe("Partial");
 });
+
+it.each(["GPU device lost", { message: "Failed to fetch runtime" }])(
+  "preserves serialized worker loading errors: %j",
+  async (error) => {
+    const writer = fake();
+    vi.mocked(writer.load).mockRejectedValue(error);
+    const { result } = renderHook(() => useWriter(writer));
+    await act(() => result.current.load("model"));
+    expect(result.current.error).toContain(
+      typeof error === "string" ? error : error.message,
+    );
+    expect(result.current.status).toBe("idle");
+  },
+);

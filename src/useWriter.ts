@@ -71,9 +71,20 @@ export function useWriter(writer: Writer) {
       if (id === generation.current) {
         writer.dispose();
         setStatus("idle");
-        setError(
+        const detail =
           cause instanceof Error
-            ? `Could not load the model: ${cause.message.slice(0, 500)}`
+            ? cause.message
+            : typeof cause === "string"
+              ? cause
+              : cause &&
+                  typeof cause === "object" &&
+                  "message" in cause &&
+                  typeof cause.message === "string"
+                ? cause.message
+                : "";
+        setError(
+          detail.trim()
+            ? `Could not load the model: ${detail.slice(0, 500)}`
             : "Could not load the model. Check connection, available storage and WebGPU support, then retry.",
         );
       }
