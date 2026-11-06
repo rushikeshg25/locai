@@ -14,11 +14,31 @@ export default defineConfig({
         theme_color: "#fafafa",
         background_color: "#fafafa",
         display: "standalone",
+        icons: [
+          {
+            src: "/icons/locai-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/icons/locai-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/icons/locai-maskable-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
       },
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
-        globPatterns: ["**/*.{js,css,html,svg,ico,wasm}"],
+        globPatterns: ["**/*.{js,css,html,svg,ico,png,wasm}"],
         maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         cleanupOutdatedCaches: true,
       },

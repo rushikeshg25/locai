@@ -203,6 +203,17 @@ RUN_MODEL=1 E2E_CHANNEL=chrome npx playwright test e2e/model.spec.ts
 
 This downloads the default model and requires a usable WebGPU adapter in the automated browser. See [`docs/evaluation.md`](docs/evaluation.md) for output collection and quality review using [`docs/evaluation-cases.json`](docs/evaluation-cases.json).
 
+### App icons
+
+The favicon and home-screen icons share the vector source in `public/icons/locai.svg`.
+After editing it, regenerate the PNG variants with:
+
+```sh
+node scripts/generate-icons.mjs
+# Or use installed Chrome:
+ICON_BROWSER_CHANNEL=chrome node scripts/generate-icons.mjs
+```
+
 ### Code map
 
 | Area                                  | Main files                                                          |

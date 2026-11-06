@@ -4,6 +4,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY index.html tsconfig.json vite.config.ts ./
 COPY src ./src
+COPY public/icons ./public/icons
 ARG VITE_RUNTIME_BASE_URL=
 ENV VITE_RUNTIME_BASE_URL=${VITE_RUNTIME_BASE_URL}
 RUN npm run build
