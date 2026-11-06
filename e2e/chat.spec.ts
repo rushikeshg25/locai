@@ -207,3 +207,25 @@ test("model loading stays in its dropdown without moving the composer", async ({
     await page.keyboard.press("Escape");
   }
 });
+
+test("collapsed desktop sidebar keeps chat and search actions available", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Collapse chats" }).click();
+  const rail = page.getByRole("complementary", { name: "Chat navigation" });
+  await expect(rail).toBeVisible();
+  await expect(rail).toHaveCSS("width", "56px");
+  await page.getByRole("button", { name: "New chat", exact: true }).click();
+  await expect(rail).toBeVisible();
+  await page.getByRole("button", { name: "Search chats", exact: true }).click();
+  await expect(page.getByLabel("Search conversations")).toBeFocused();
+  await page.getByRole("button", { name: "Collapse chats" }).click();
+  await page.screenshot({ path: "/tmp/chat-rail-desktop.png" });
+  await page.getByRole("button", { name: "Expand chats" }).click();
+  await expect(page.getByLabel("Search conversations")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(rail).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open chats" })).toBeVisible();
+});

@@ -965,7 +965,7 @@ del {
   height: 17px;
 }
 @media (min-width: 901px) {
-  .sidebar-open .workspace-heading > .button-hint {
+  .workspace-heading > .button-hint {
     display: none;
   }
 }
@@ -1126,4 +1126,24 @@ del {
 }
 .model-settings .model-storage-details > summary::-webkit-details-marker {
   display: inline;
+}
+
+.chat-rail {
+  width: 56px;
+  flex-shrink: 0;
+  height: 100dvh;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+.chat-rail > .button-hint:first-child {
+  margin-bottom: 12px;
+}
+.chat-rail .icon-button {
+  width: 38px;
+  height: 38px;
 }

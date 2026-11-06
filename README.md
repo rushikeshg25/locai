@@ -42,7 +42,7 @@ This value is public client configuration, not a secret. Changing it requires re
 ## Chat and writing
 
 - In Write mode, **Writing preferences** accepts protected terms and a custom instruction. Missing protected terms are flagged; retries and edit/resend retain the original preferences. Preferences are stored with the request only when you save its conversation.
-- The collapsible chat sidebar searches titles and messages. On narrow screens, open the chat drawer; Escape or a backdrop click closes it.
+- The chat sidebar searches titles and messages. On desktop it collapses into an icon rail with Expand, New chat, and Search controls. On narrow screens, open the chat drawer; Escape or a backdrop click closes it.
 - Save, export and delete controls are in the header’s Chat options menu. Reply actions appear on hover or keyboard focus on desktop and remain visible on touch screens.
 - **Chat** is the default. Completed turns provide context for follow-up questions. **Write** offers ten editing actions, with original/revised word-level comparison.
 - Enter sends; Ctrl+Enter (⌘+Enter on Mac) or Shift+Enter inserts a newline. The composer grows with the draft and available width, scrolling only at its height limit, and respects IME composition. Sending without a loaded model shows a warning with a model-picker action and keeps your draft.

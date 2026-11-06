@@ -20,6 +20,14 @@ export function ConversationSidebar({
   onSelect: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
+  const search = useRef<HTMLInputElement>(null);
+  const focusSearch = useRef(false);
+  useEffect(() => {
+    if (open && focusSearch.current) {
+      search.current?.focus();
+      focusSearch.current = false;
+    }
+  }, [open]);
   const filtered = chats.filter((chat) =>
     `${chat.title} ${chat.messages.map((message) => message.content).join(" ")}`
       .toLocaleLowerCase()
@@ -75,6 +83,7 @@ export function ConversationSidebar({
       <div className="chat-search-field">
         <Icon name="search" />
         <input
+          ref={search}
           id="chat-search"
           type="search"
           placeholder="Search chats"
@@ -123,6 +132,42 @@ export function ConversationSidebar({
     >
       <div className="conversation-sidebar">{content}</div>
     </dialog>
+  ) : !open ? (
+    <aside className="chat-rail" aria-label="Chat navigation">
+      <Button
+        className="icon-button secondary"
+        aria-label="Expand chats"
+        title="Expand chats"
+        onClick={() => onOpen?.(true)}
+      >
+        <Icon name="sidebar" />
+      </Button>
+      {onNew && (
+        <Button
+          className="icon-button secondary"
+          aria-label="New chat"
+          title="New chat"
+          disabled={busy}
+          onClick={() => {
+            setQuery("");
+            onNew();
+          }}
+        >
+          <Icon name="edit" />
+        </Button>
+      )}
+      <Button
+        className="icon-button secondary"
+        aria-label="Search chats"
+        title="Search chats"
+        onClick={() => {
+          focusSearch.current = true;
+          onOpen?.(true);
+        }}
+      >
+        <Icon name="search" />
+      </Button>
+    </aside>
   ) : (
     <aside
       className="conversation-sidebar"
