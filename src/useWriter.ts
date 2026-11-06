@@ -84,6 +84,7 @@ export function useWriter(writer: Writer) {
   async function run(
     request: WritingRequest,
     onChunk?: (text: string) => void,
+    title?: { firstMessage: string; onTitle: (value: string) => void },
   ): Promise<{
     text: string;
     state: "complete" | "stopped" | "error";
@@ -111,6 +112,22 @@ export function useWriter(writer: Writer) {
           onChunk?.(text);
         }
       });
+      const state =
+        interrupted.current || id !== generation.current
+          ? "stopped"
+          : "complete";
+      if (state === "complete" && title && writer.title) {
+        try {
+          const value = await writer.title(title.firstMessage);
+          if (value && id === generation.current && !interrupted.current)
+            title.onTitle(value);
+        } catch {
+          if (id === generation.current && !interrupted.current)
+            setNotice(
+              "Could not generate a chat title. Keeping the first-message title.",
+            );
+        }
+      }
       if (id === generation.current) {
         setStatus("ready");
         if (result.truncated)
@@ -120,10 +137,7 @@ export function useWriter(writer: Writer) {
       }
       return {
         text,
-        state:
-          interrupted.current || id !== generation.current
-            ? "stopped"
-            : "complete",
+        state,
         truncated: result.truncated,
       };
     } catch (cause) {

@@ -6,9 +6,10 @@ export async function installBrowserModel(
   loadDelay = 0,
   replies?: string[],
   chunkDelay = 0,
+  title = "",
 ) {
   await page.addInitScript(
-    ({ loadDelay, replies, chunkDelay }) => {
+    ({ loadDelay, replies, chunkDelay, title }) => {
       Object.defineProperty(navigator, "gpu", {
         configurable: true,
         value: { requestAdapter: async () => ({}) },
@@ -32,6 +33,11 @@ export async function installBrowserModel(
           )
             return;
           let content: unknown;
+          if (message.kind === "chatCompletionNonStreaming") {
+            content = {
+              choices: [{ message: { content: title }, finish_reason: "stop" }],
+            };
+          }
           if (message.kind === "chatCompletionStreamInit") {
             requests.push(message.content.request);
             this.emitted = 0;
@@ -79,7 +85,7 @@ export async function installBrowserModel(
         },
       });
     },
-    { loadDelay, replies, chunkDelay },
+    { loadDelay, replies, chunkDelay, title },
   );
 }
 export async function modelRequests(page: Page) {

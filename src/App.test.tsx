@@ -436,3 +436,64 @@ it("does not store empty chats and warns when automatic saving fails", async () 
     storage.mockRestore();
   }
 });
+
+it("generates a title only from the first message and saves it with the conversation", async () => {
+  const writer = setup();
+  writer.title = vi.fn().mockResolvedValue("Weekend trip planning");
+  await ready();
+  await send("Can you help me plan a weekend trip?");
+  expect(
+    await screen.findByRole("button", {
+      name: "Open chat: Weekend trip planning",
+    }),
+  ).toBeInTheDocument();
+  expect(writer.title).toHaveBeenCalledWith(
+    "Can you help me plan a weekend trip?",
+  );
+  await send("What about the budget?");
+  expect(writer.title).toHaveBeenCalledTimes(1);
+  cleanup();
+  setup();
+  expect(
+    screen.getByRole("button", { name: "Open chat: Weekend trip planning" }),
+  ).toBeInTheDocument();
+});
+
+it("keeps the reply and fallback title if title generation fails", async () => {
+  const writer = setup();
+  writer.title = vi.fn().mockRejectedValue(new Error("Title failed"));
+  await ready();
+  await send("A question");
+  expect(
+    await screen.findByText(
+      "Could not generate a chat title. Keeping the first-message title.",
+    ),
+  ).toBeInTheDocument();
+  expect(screen.getByText("We might ship Friday.")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Open chat: A question" }),
+  ).toBeInTheDocument();
+});
+
+it("does not apply a late title after stopping", async () => {
+  const writer = setup();
+  let finish!: (value: string) => void;
+  writer.title = vi.fn(
+    () =>
+      new Promise<string>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  await ready();
+  await send("Keep original title");
+  await waitFor(() => expect(writer.title).toHaveBeenCalledOnce());
+  fireEvent.click(screen.getByRole("button", { name: "Stop" }));
+  await act(async () => finish("Late title"));
+  expect(
+    screen.getByRole("button", { name: "Open chat: Keep original title" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Open chat: Late title" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText("We might ship Friday.")).toBeInTheDocument();
+});

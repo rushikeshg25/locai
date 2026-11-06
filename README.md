@@ -71,7 +71,7 @@ Downloaded models load automatically on startup by default. You can disable **Au
 
 - **Chat:** ask questions and continue conversations with context from completed turns.
 - **Write:** fix grammar, adjust tone, shorten, summarize, format, simplify, expand, or make text more direct or warmer. Compare the original and revised wording.
-- **Chat history:** search conversation titles and message text. Collapse the desktop sidebar into an icon rail for Expand, New chat, and Search. Mobile uses a drawer.
+- **Chat history:** the loaded model creates a short title from your first message after the first reply. Titles save with the conversation; if generation fails, the message excerpt remains. Search conversation titles and message text. Collapse the desktop sidebar into an icon rail for Expand, New chat, and Search. Mobile uses a drawer.
 - **Reply actions:** copy, cite selected text, reuse as input, or branch from a reply. Retry and edit/resend create a new branch while keeping the original conversation.
 - **Attachments:** add plain-text or Markdown reference files. Their contents are included as text, not executed.
 - **Display:** light and dark themes, Markdown replies, tables, code blocks with Copy, and streamed responses. Scrolling up pauses automatic following; **Jump to latest** returns to the reply.

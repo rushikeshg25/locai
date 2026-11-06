@@ -419,8 +419,15 @@ export default function App({
     }
     const parse = (content: string) =>
       supportsReasoning(selected.id) ? splitReasoning(content) : { content };
-    const result = await session.run(request, (content) =>
-      patch(id, answer.id, parse(content)),
+    const result = await session.run(
+      request,
+      (content) => patch(id, answer.id, parse(content)),
+      !fork && chat.messages.length === 0
+        ? {
+            firstMessage: source,
+            onTitle: (title) => update(id, (item) => ({ ...item, title })),
+          }
+        : undefined,
     );
     patch(id, answer.id, {
       ...parse(result.text),
