@@ -14,9 +14,7 @@ export function ModelPicker({
   required = false,
   supported,
   onSelect,
-  onLoad,
   onRemove,
-  onUnload,
   autoLoad,
   onAutoLoad,
   reasoning,
@@ -35,10 +33,8 @@ export function ModelPicker({
   required?: boolean;
   supported: boolean | null;
   onSelect: (id: string) => void;
-  onLoad: () => void;
   onRemove: (id: string) => void;
   contextUsage: number;
-  onUnload: () => void;
 }) {
   const picker = useRef<HTMLDetailsElement>(null);
   const [cache, setCache] = useState<Record<string, boolean | null>>({});
@@ -126,8 +122,9 @@ export function ModelPicker({
                   type="radio"
                   name="model"
                   checked={item.id === model}
-                  disabled={busy}
-                  onChange={() => onSelect(item.id)}
+                  disabled={busy || supported !== true}
+                  onChange={() => {}}
+                  onClick={() => onSelect(item.id)}
                 />
                 <span>
                   <strong>{item.label}</strong>
@@ -175,33 +172,6 @@ export function ModelPicker({
             Cannot check saved files. Browser storage may be unavailable.
           </p>
         )}
-        <div className="model-controls">
-          <Button
-            disabled={
-              !supported ||
-              busy ||
-              status === "ready" ||
-              cache[model] === undefined
-            }
-            onClick={onLoad}
-          >
-            <Icon name="download" />
-            {status === "ready"
-              ? "Model ready"
-              : cache[model] === undefined
-                ? "Checking downloads…"
-                : cache[model] === true
-                  ? "Load from device"
-                  : "Download model"}
-          </Button>
-          <Button
-            className="secondary"
-            disabled={busy || status !== "ready"}
-            onClick={onUnload}
-          >
-            Unload
-          </Button>
-        </div>
         {supportsReasoning(model) && (
           <label className="reasoning-setting">
             <input

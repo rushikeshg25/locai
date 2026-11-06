@@ -15,10 +15,11 @@ test("reasoning streams separately, persists, and stays out of later context", a
     0,
   );
   await page.getByRole("radio", { name: /Qwen 3 0.6B/ }).check();
-  await expect(page.getByRole("checkbox", { name: /Reasoning/ })).toBeChecked();
-  await page.getByRole("button", { name: "Download model" }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByRole("checkbox", { name: /Reasoning/, includeHidden: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
   await page.getByLabel("Your text").fill("What is six times seven?");
   await page.getByLabel("Your text").press("Enter");
@@ -60,11 +61,12 @@ test("reasoning preference applies to direct writing requests too", async ({
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
   await page.getByRole("radio", { name: /Qwen 3 0.6B/ }).check();
-  await page.getByRole("checkbox", { name: /Reasoning/ }).uncheck();
-  await page.getByRole("button", { name: "Download model" }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
+  await page.getByLabel("Models", { exact: true }).click();
+  await page.getByRole("checkbox", { name: /Reasoning/ }).uncheck();
+  await page.keyboard.press("Escape");
   await page.getByLabel("Your text").fill("Say hello");
   await page.getByLabel("Your text").press("Enter");
   await expect(page.locator(".assistant .markdown")).toHaveText("Answer");
@@ -102,9 +104,8 @@ test("unfinished reasoning is never presented as a final answer", async ({
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
   await page.getByRole("radio", { name: /Qwen 3 0.6B/ }).check();
-  await page.getByRole("button", { name: "Download model" }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
   await page.getByLabel("Your text").fill("A difficult question");
   await page.getByLabel("Your text").press("Enter");

@@ -13,9 +13,9 @@ async function connect(page: Page) {
   await installBrowserModel(page);
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("button", { name: "Download model" }).click();
+  await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
 }
 test("optional search sends only current question and passes sources to local inference", async ({

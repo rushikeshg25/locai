@@ -12,9 +12,9 @@ test("generated first-message title appears in history and persists on reload", 
   );
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("button", { name: "Download model" }).click();
+  await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
   await page
     .getByLabel("Your text")

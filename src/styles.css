@@ -434,17 +434,7 @@ header {
 .model-option small {
   display: block;
 }
-.model-controls {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-.model-controls button {
-  font-size: 12px;
-}
+
 .model-panel .muted {
   margin: 12px 0;
 }
@@ -1302,9 +1292,7 @@ input[type="radio"] {
   overflow-wrap: anywhere;
   line-height: 1.5;
 }
-.model-controls {
-  row-gap: 8px;
-}
+
 @media (max-width: 600px), (pointer: coarse) {
   button,
   .web-search-toggle,
@@ -1333,9 +1321,6 @@ input[type="radio"] {
   .attachments button,
   .code-block button,
   .message-tools button,
-  .model-controls button {
-    min-height: 44px;
-  }
   .composer textarea,
   .chat-search-field #chat-search {
     font-size: 16px;

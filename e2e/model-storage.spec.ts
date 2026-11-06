@@ -25,7 +25,7 @@ test("saved model detection survives reload and deleting a row removes only that
   await page.reload();
   await page.getByLabel("Models", { exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Load from device", exact: true }),
+    page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }),
   ).toBeEnabled();
   await expect(
     page.getByText("Downloaded on this device", { exact: true }),
@@ -33,13 +33,17 @@ test("saved model detection survives reload and deleting a row removes only that
   page.once("dialog", (dialog) => dialog.dismiss());
   await page.getByRole("button", { name: "Delete Qwen 2.5 0.5B" }).click();
   await expect(
-    page.getByRole("button", { name: "Load from device", exact: true }),
+    page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }),
   ).toBeEnabled();
   await page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }).check();
+  await expect(
+    page.getByText("Loaded in memory", { exact: true }),
+  ).toBeAttached();
+  await page.getByLabel("Models", { exact: true }).click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete Qwen 2.5 0.5B" }).click();
   await expect(
-    page.getByRole("button", { name: "Load from device", exact: true }),
+    page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }),
   ).toBeEnabled();
   expect(
     await page.evaluate(async (bases) => {

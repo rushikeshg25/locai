@@ -58,7 +58,7 @@ The service worker and offline app cache are enabled in production builds, not t
 ## Start a conversation
 
 1. Open the model selector beside Send.
-2. Choose a model and select **Download model**. The first download needs internet.
+2. Select a model to load it immediately. The first download needs internet.
 3. Wait for the model to be ready, then send a message.
 
 Downloaded models load automatically on startup by default. You can disable **Auto-load downloaded model** in the selector. Sending before a model is ready opens the selector and preserves your draft.
@@ -142,9 +142,8 @@ These are estimates, not device compatibility guarantees. Runtime, tokenizer, br
 
 The model dropdown keeps progress and actions separate from the composer:
 
-- **Download model** obtains missing files.
-- **Load from device** reuses downloaded weights.
-- **Unload** releases the running worker without deleting downloaded files.
+- Selecting a model loads it immediately, reusing downloaded weights and downloading missing files. Selecting it again retries a failed or stopped load.
+- Switching models releases the previous worker.
 - The bin button beside a downloaded model asks for confirmation, then removes the selected model's cached files. It does not delete chats.
 - **Storage & details** shows storage estimates and offers **Keep downloads on device**, which requests persistent storage. The browser decides whether to grant it.
 

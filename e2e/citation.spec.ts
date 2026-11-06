@@ -9,9 +9,9 @@ for (const width of [1440, 390]) {
     await installBrowserModel(page, 0, ["A useful answer."]);
     await page.goto("/");
     await page.getByLabel("Models", { exact: true }).click();
-    await page.getByRole("button", { name: "Download model" }).click();
+    await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
     await expect(
-      page.getByRole("button", { name: "Model ready", includeHidden: true }),
+      page.getByText("Loaded in memory", { exact: true }),
     ).toBeAttached();
     const input = page.getByLabel("Your text");
     await input.fill("Tell me something");

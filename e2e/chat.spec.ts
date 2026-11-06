@@ -4,9 +4,9 @@ async function connect(page: Page) {
   await installBrowserModel(page);
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("button", { name: "Download model" }).click();
+  await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
 }
 test("chat context, Markdown, attachments, branching and automatic persistence", async ({
@@ -177,7 +177,7 @@ test("sending without a model keeps the draft and offers model setup", async ({
   expect((await input.boundingBox())!.y).toBe(before!.y);
 
   await expect(page.locator(".model-settings")).toHaveAttribute("open", "");
-  await page.getByRole("button", { name: "Download model" }).click();
+  await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
   await expect(page.getByText("Load a model before sending")).toHaveCount(0);
   await expect(input).toHaveValue("Keep this draft");
   await page.getByRole("button", { name: "Send message" }).click();
@@ -195,7 +195,7 @@ test("model loading uses a row progress ring without moving the composer", async
     const before = await input.boundingBox();
     const nameBefore = await page.locator(".model-name").boundingBox();
     await page.getByLabel("Models", { exact: true }).click();
-    await page.getByRole("button", { name: "Download model" }).click();
+    await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
     await expect(
       page
         .locator(".model-row-action")
@@ -209,12 +209,10 @@ test("model loading uses a row progress ring without moving the composer", async
         .getByRole("progressbar", { name: "Estimated context usage" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Model ready", includeHidden: true }),
+      page.getByText("Loaded in memory", { exact: true }),
     ).toBeAttached();
     expect((await input.boundingBox())!.y).toBe(before!.y);
-    await page.getByLabel("Models", { exact: true }).click();
-    await page.getByRole("button", { name: "Unload", exact: true }).click();
-    await page.keyboard.press("Escape");
+    await page.reload();
   }
 });
 

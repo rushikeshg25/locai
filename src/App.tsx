@@ -1058,14 +1058,14 @@ export default function App({
                       );
                   }}
                   onSelect={(id) => {
+                    if (id === model && session.status === "ready") return;
                     session.stop("");
                     setModel(id);
+                    void session.load(id);
                     if (!setPreference("model", id))
                       setFeedback("Could not remember this model selection.");
                   }}
-                  onLoad={() => void session.load(model)}
                   onRemove={(id) => void session.remove(id)}
-                  onUnload={() => session.stop("")}
                 />
                 {busy ? (
                   <Button
