@@ -156,3 +156,37 @@ it("uses native thinking only on supported chat models and disables it for writi
   expect(create.mock.calls.at(-1)![0]).not.toHaveProperty("extra_body");
   writer.dispose();
 });
+
+it("requests a bounded local title without chat history or reasoning", async () => {
+  vi.stubGlobal("Worker", FakeWorker);
+  const create = vi
+    .fn()
+    .mockResolvedValue({
+      choices: [
+        {
+          message: { content: '"Planning a weekend trip"' },
+          finish_reason: "stop",
+        },
+      ],
+    });
+  runtime.create.mockResolvedValue({ chat: { completions: { create } } });
+  const writer = new LocalWriter();
+  await writer.load("Qwen3-0.6B-q4f16_1-MLC", vi.fn());
+  expect(await writer.title("a".repeat(1500))).toBe("Planning a weekend trip");
+  expect(create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      stream: false,
+      max_tokens: 32,
+      extra_body: { enable_thinking: false },
+    }),
+  );
+  const request = create.mock.calls[0][0];
+  expect(request.messages).toHaveLength(2);
+  expect(request.messages[1].content).toHaveLength(1000);
+  create.mockResolvedValue({
+    choices: [
+      { message: { content: "Incomplete title" }, finish_reason: "length" },
+    ],
+  });
+  expect(await writer.title("Hello")).toBeNull();
+});
