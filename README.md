@@ -6,11 +6,11 @@ Previously named Local Writer. Existing browser storage keys retain the old pref
 
 The app is a static React application. Your browser downloads the model files and performs inference; Nginx serves the app and forwards optional web searches to a bundled SearXNG service. No model inference runs on the server.
 
-## Get started
+## Get started with Locai
 
 You need a browser with WebGPU support and hardware acceleration enabled. Open the app over **localhost or HTTPS**. Available GPU memory determines which models your device can run.
 
-### Run with Docker
+### Run with Docker 
 
 Clone the repository, then open its directory:
 
