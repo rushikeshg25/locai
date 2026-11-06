@@ -1,4 +1,4 @@
-import { prepareMessages, type WritingRequest } from "./prompts";
+import { prepareMessages, type WritingRequest } from "../prompts/prompts";
 export interface WebSource {
   title: string;
   url: string;

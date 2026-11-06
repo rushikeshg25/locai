@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Icon } from "./Icon";
-import { Button } from "./Button";
+import { Icon } from "../../shared/ui/Icon";
+import { Button } from "../../shared/ui/Button";
 import type { Conversation } from "./conversations";
 export function ConversationSidebar({
   chats,

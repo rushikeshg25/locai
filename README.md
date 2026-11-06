@@ -140,7 +140,7 @@ All listed models use WebLLM-compatible quantized weights. Qwen 2.5 0.5B is the 
 | Phi 3.5 Mini            | 2.15 GB             | 3.7 GB               |
 | Qwen 3 0.6B (reasoning) | 335 MB              | 1.4 GB               |
 
-These are estimates, not device compatibility guarantees. Runtime, tokenizer, browser, and cache overhead are additional. The model IDs and displayed estimates are defined in [`src/models.ts`](src/models.ts); runtime configuration comes from the installed WebLLM registry.
+These are estimates, not device compatibility guarantees. Runtime, tokenizer, browser, and cache overhead are additional. The model IDs and displayed estimates are defined in [`src/features/models/models.ts`](src/features/models/models.ts); runtime configuration comes from the installed WebLLM registry.
 
 The model dropdown keeps progress and actions separate from the composer:
 
@@ -242,21 +242,21 @@ ICON_BROWSER_CHANNEL=chrome node scripts/generate-icons.mjs
 
 ### Code map
 
-| Area                                  | Main files                                                          |
-| ------------------------------------- | ------------------------------------------------------------------- |
-| Chat workspace and model UI           | `src/App.tsx`, `src/ConversationSidebar.tsx`, `src/ModelPicker.tsx` |
-| Model catalog and inference worker    | `src/models.ts`, `src/inference.ts`, `src/inference.worker.ts`      |
-| Loading, generation, and cancellation | `src/useWriter.ts`                                                  |
-| Prompts, writing actions, and context | `src/prompts.ts`, `src/actions.ts`                                  |
-| Conversation storage and attachments  | `src/conversations.ts`, `src/storage.ts`                            |
-| Web search and source handling        | `src/search.ts`, `docker/searxng/settings.yml`, `docker/nginx.conf` |
-| Offline app registration and caching  | `src/offline.ts`, `vite.config.ts`                                  |
-| Unit/component and browser tests      | `src/*.test.*`, `e2e/`                                              |
+| Area                                  | Main files                                                                                                     |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Chat workspace and model UI           | `src/app/App.tsx`, `src/features/chat/ConversationSidebar.tsx`, `src/features/models/ModelPicker.tsx`          |
+| Model catalog and inference worker    | `src/features/models/models.ts`, `src/features/models/inference.ts`, `src/features/models/inference.worker.ts` |
+| Loading, generation, and cancellation | `src/features/models/useWriter.ts`                                                                             |
+| Prompts, writing actions, and context | `src/features/prompts/prompts.ts`, `src/features/writing/actions.ts`                                           |
+| Conversation storage and attachments  | `src/features/chat/conversations.ts`, `src/features/chat/storage.ts`                                           |
+| Web search and source handling        | `src/features/search/search.ts`, `docker/searxng/settings.yml`, `docker/nginx.conf`                            |
+| Offline app registration and caching  | `src/platform/offline.ts`, `vite.config.ts`                                                                    |
+| Unit/component and browser tests      | `src/**/*.test.*`, `e2e/`                                                                                      |
 
 The app currently has no full-page browsing, voice, executable artifacts, or account sync. Model assets remain on their respective hosts and carry their own terms; this repository is marked `UNLICENSED` in `package.json`.
 
 ### Locai persona
 
-The default chat prompt in `src/persona.ts` gives Locai a concise, friendly voice, follows the user's language and requested format, and supports writing tasks directly. It asks for clarification only when needed, preserves facts in edits, admits uncertainty, and treats quoted or attached material as reference data. Web citations are enabled only when search snippets are supplied. It does not claim browser, terminal, or device-control tools.
+The default chat prompt in `src/features/prompts/persona.ts` gives Locai a concise, friendly voice, follows the user's language and requested format, and supports writing tasks directly. It asks for clarification only when needed, preserves facts in edits, admits uncertainty, and treats quoted or attached material as reference data. Web citations are enabled only when search snippets are supplied. It does not claim browser, terminal, or device-control tools.
 
 Design references: [Codex's public base instructions](https://github.com/openai/codex/blob/main/codex-rs/protocol/src/prompts/base_instructions/default.md) for tone and capability boundaries; [Open WebUI's prompt guidance](https://docs.openwebui.com/getting-started/essentials/) for stable system context; [llama.cpp chat templates](https://github.com/ggml-org/llama.cpp/blob/master/common/chat.cpp) for keeping model-specific formatting in the runtime. This is a short, original prompt adapted to Locai's small local models, not a copied coding-agent prompt.

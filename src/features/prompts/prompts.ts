@@ -1,7 +1,7 @@
 import { LOCAI_SYSTEM_PROMPT } from "./persona";
 import type { ChatCompletionMessageParam } from "@mlc-ai/web-llm";
-import type { WebSource } from "./search";
-import { actions, type Action } from "./actions";
+import type { WebSource } from "../search/search";
+import { actions, type Action } from "../writing/actions";
 export interface WritingRequest {
   text: string;
   reasoning?: boolean;

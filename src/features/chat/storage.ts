@@ -1,5 +1,5 @@
-import { validSource } from "./search";
-import { actions } from "./actions";
+import { validSource } from "../search/search";
+import { actions } from "../writing/actions";
 import { type Conversation, type Message, messageText } from "./conversations";
 const PREFIX = "local-writer-chat-v1:";
 const LIMIT = 2_000_000;

@@ -1,10 +1,10 @@
-import { SelectionCitation } from "./SelectionCitation";
-import { useDismissibleDetails } from "./useDismissibleDetails";
-import { searchWeb, fitSearch } from "./search";
-import type { WritingRequest } from "./prompts";
-import { ConversationSidebar } from "./ConversationSidebar";
-import { BrowserWelcome } from "./BrowserWelcome";
-import { Button } from "./Button";
+import { SelectionCitation } from "../features/chat/SelectionCitation";
+import { useDismissibleDetails } from "../shared/hooks/useDismissibleDetails";
+import { searchWeb, fitSearch } from "../features/search/search";
+import type { WritingRequest } from "../features/prompts/prompts";
+import { ConversationSidebar } from "../features/chat/ConversationSidebar";
+import { BrowserWelcome } from "../features/chat/BrowserWelcome";
+import { Button } from "../shared/ui/Button";
 import {
   useEffect,
   useLayoutEffect,
@@ -12,16 +12,16 @@ import {
   useState,
   type SetStateAction,
 } from "react";
-import { actions, inputError, type Action } from "./actions";
-import { LocalWriter, type Writer } from "./inference";
-import { splitReasoning } from "./reasoning";
-import { checkGPU, models, supportsReasoning } from "./models";
-import { ChangeReview } from "./ChangeReview";
-import { Icon } from "./Icon";
-import { useWriter } from "./useWriter";
-import { useTheme } from "./useTheme";
-import { ModelPicker } from "./ModelPicker";
-import { Markdown } from "./Markdown";
+import { actions, inputError, type Action } from "../features/writing/actions";
+import { LocalWriter, type Writer } from "../features/models/inference";
+import { splitReasoning } from "../features/models/reasoning";
+import { checkGPU, models, supportsReasoning } from "../features/models/models";
+import { ChangeReview } from "../features/writing/ChangeReview";
+import { Icon } from "../shared/ui/Icon";
+import { useWriter } from "../features/models/useWriter";
+import { useTheme } from "../shared/hooks/useTheme";
+import { ModelPicker } from "../features/models/ModelPicker";
+import { Markdown } from "../shared/ui/Markdown";
 import {
   newConversation,
   conversationHistory,
@@ -29,20 +29,24 @@ import {
   type Message,
   type Conversation,
   type Attachment,
-} from "./conversations";
+} from "../features/chat/conversations";
 import {
   readSaved,
   saveChat,
   forgetChat,
   exportMarkdown,
   readAttachments,
-} from "./storage";
-import { getPreference, setPreference, preferredModel } from "./preferences";
+} from "../features/chat/storage";
+import {
+  getPreference,
+  setPreference,
+  preferredModel,
+} from "../shared/storage/preferences";
 import {
   prepareMessages,
   missingTerms,
   conversationBudgetUsage,
-} from "./prompts";
+} from "../features/prompts/prompts";
 export default function App({
   writer: supplied,
   gpuCheck = checkGPU,

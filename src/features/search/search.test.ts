@@ -1,8 +1,8 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { fitSearch, searchWeb, validSource } from "./search";
-import { prepareMessages, type WritingRequest } from "./prompts";
-import { newConversation } from "./conversations";
-import { saveChat, readSaved, exportMarkdown } from "./storage";
+import { prepareMessages, type WritingRequest } from "../prompts/prompts";
+import { newConversation } from "../chat/conversations";
+import { saveChat, readSaved, exportMarkdown } from "../chat/storage";
 const source = {
   title: "Reference",
   url: "https://example.com/",

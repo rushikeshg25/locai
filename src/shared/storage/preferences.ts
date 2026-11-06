@@ -1,4 +1,4 @@
-import { models } from "./models";
+import { models } from "../../features/models/models";
 export function getPreference(key: string, fallback: string) {
   try {
     return localStorage.getItem(`local-writer-${key}`) ?? fallback;

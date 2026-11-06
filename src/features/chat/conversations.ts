@@ -1,5 +1,5 @@
-import type { WebSource } from "./search";
-import type { Action } from "./actions";
+import type { WebSource } from "../search/search";
+import type { Action } from "../writing/actions";
 export type Mode = "chat" | "write";
 export interface Attachment {
   name: string;

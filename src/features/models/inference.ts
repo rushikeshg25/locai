@@ -1,4 +1,4 @@
-import { cleanChatTitle } from "./chatTitle";
+import { cleanChatTitle } from "../chat/chatTitle";
 import {
   CreateWebWorkerMLCEngine,
   prebuiltAppConfig,
@@ -11,7 +11,7 @@ import {
   prepareMessages,
   outputTokenLimit,
   type WritingRequest,
-} from "./prompts";
+} from "../prompts/prompts";
 export interface Writer {
   load(
     model: string,
