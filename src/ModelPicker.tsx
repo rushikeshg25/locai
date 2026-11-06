@@ -2,7 +2,7 @@ import { useDismissibleDetails } from "./useDismissibleDetails";
 import { LoadingStatus } from "./LoadingStatus";
 import { Button } from "./Button";
 import { useEffect, useRef, useState } from "react";
-import { models, supportsReasoning } from "./models";
+import { models, modelsBySize, supportsReasoning } from "./models";
 import type { Writer } from "./inference";
 import { Icon } from "./Icon";
 export function ModelPicker({
@@ -85,8 +85,7 @@ export function ModelPicker({
           />
         )}
         <span className="model-name">
-          {models.find((item) => item.id === model)?.label.split(" · ")[1] ??
-            model}
+          {models.find((item) => item.id === model)?.label ?? model}
         </span>
         <Icon name="chevron" />
       </summary>
@@ -124,7 +123,7 @@ export function ModelPicker({
           aria-label="Writing model"
           className="model-catalog"
         >
-          {models.map((item) => (
+          {modelsBySize.map((item) => (
             <label key={item.id} className="model-option">
               <input
                 type="radio"
@@ -134,7 +133,20 @@ export function ModelPicker({
                 onChange={() => onSelect(item.id)}
               />
               <span>
-                <strong>{item.label}</strong>
+                <strong>
+                  <span className="model-size" aria-hidden="true">
+                    {"🧊".repeat(
+                      item.downloadMB <= 350
+                        ? 1
+                        : item.downloadMB <= 900
+                          ? 2
+                          : item.downloadMB <= 1900
+                            ? 3
+                            : 4,
+                    )}
+                  </span>
+                  {item.label}
+                </strong>
                 <small>
                   {item.download} · {item.memory}
                 </small>
