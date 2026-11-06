@@ -45,8 +45,10 @@ export function ConversationSidebar({
       onOpen?.(!media.matches);
     };
     media.addEventListener("change", change);
+    // Catch a resize between the first render and listener registration.
+    if (media.matches !== mobile) change();
     return () => media.removeEventListener("change", change);
-  }, [onOpen]);
+  }, [onOpen, mobile]);
   useEffect(() => {
     if (mobile && open) dialog.current?.showModal();
     else dialog.current?.close();

@@ -4,7 +4,7 @@ Chat with a language model, work through ideas, and revise drafts—all in your 
 
 Previously named Local Writer. Existing browser storage keys retain the old prefix so saved chats and preferences continue to work on the same origin.
 
-The app is a static React application. Your browser downloads the model files and performs inference; the web server only serves the app.
+The app is a static React application. Your browser downloads the model files and performs inference; Nginx serves the app and forwards optional web searches to a bundled SearXNG service. No model inference runs on the server.
 
 ## Get started
 
@@ -50,8 +50,10 @@ Open the URL printed by Vite. To build and preview the production app:
 
 ```sh
 npm run build
-npm run preview -- --host 127.0.0.1 --port 4174
+npm run preview -- --host 127.0.0.1 --port 4175
 ```
+
+For web search during development or preview, also run `docker compose up --build -d --wait`. Vite forwards `/api/search` to the Docker gateway at `http://127.0.0.1:4174`. The rest of the app works without Docker. If you change the Docker port, update that proxy target in `vite.config.ts`.
 
 The service worker and offline app cache are enabled in production builds, not the development server.
 
@@ -100,6 +102,18 @@ In Write mode, **Writing preferences** accepts a custom instruction and protecte
 
 The model context budget can impose a smaller limit. Older turns may be excluded to fit; an oversized newest request is rejected rather than silently truncated. **Context budget** shows a conservative byte-based estimate, not an exact token count.
 
+## Web search
+
+Turn on **Web** beside the attachment button before sending a chat message. Locai searches the current question, shows search progress, and passes up to four result snippets to the local model. Numbered citations open source links; **Sources** lists the actual results used. Stop cancels a pending search. Failed searches show an error and can be retried.
+
+Docker Compose includes [SearXNG](https://docs.searxng.org/), which queries public search engines. **No API key, account, or paid search subscription is required.** The search service has no exposed host port. Web is off by default and is available only in Chat mode. It needs internet.
+
+Only the current question (up to 300 characters) is sent to search—not earlier messages or attachment contents. Search engines and your search server can see that query. Source snippets are retained when you save a conversation; Markdown exports include source titles and links.
+
+This is search-assisted local chat, not a full-page browser or multi-step research agent. Answers use snippets; small models may misread evidence or omit citations. Source links are evidence to inspect, not a guarantee of accuracy. Results can be limited by engine outages or CAPTCHAs. The app never silently substitutes an unsourced answer when search fails.
+
+Engines and timeouts are configured in `docker/searxng/settings.yml`. Search requests time out after 20 seconds and the gateway limits each client to 10 requests per minute with a small burst allowance. Before exposing the service publicly, set a private `SEARXNG_SECRET`, add access controls at your reverse proxy, and review SearXNG deployment guidance. The bundled settings are intended for local use.
+
 ## Models
 
 All listed models use WebLLM-compatible quantized weights. Qwen 2.5 0.5B is the default because its download is small; it is not a measured quality winner.
@@ -127,7 +141,7 @@ Switching models unloads the current worker. Initial downloads remain explicit; 
 
 ## Privacy, storage, and offline use
 
-Messages and attachments are processed in this browser. Model downloads contact Hugging Face and the runtime host. There are no accounts or analytics, and no inference backend receives your messages. Generated HTML is disabled, and model-generated remote images are not fetched.
+Model inference processes messages and attachments in this browser. Optional web search sends the current question to search engines through SearXNG; it does not send attachment contents or chat history. Model downloads contact Hugging Face and the runtime host. There are no accounts or analytics, and no inference backend receives your messages. Generated HTML is disabled, and model-generated remote images are not fetched.
 
 | Data                                        | Where it lives        | How long it stays                                  |
 | ------------------------------------------- | --------------------- | -------------------------------------------------- |
@@ -223,7 +237,8 @@ ICON_BROWSER_CHANNEL=chrome node scripts/generate-icons.mjs
 | Loading, generation, and cancellation | `src/useWriter.ts`                                                  |
 | Prompts, writing actions, and context | `src/prompts.ts`, `src/actions.ts`                                  |
 | Conversation storage and attachments  | `src/conversations.ts`, `src/storage.ts`                            |
+| Web search and source handling        | `src/search.ts`, `docker/searxng/settings.yml`, `docker/nginx.conf` |
 | Offline app registration and caching  | `src/offline.ts`, `vite.config.ts`                                  |
 | Unit/component and browser tests      | `src/*.test.*`, `e2e/`                                              |
 
-The app currently has no web search, external tools, voice, executable artifacts, or account sync. Model assets remain on their respective hosts and carry their own terms; this repository is marked `UNLICENSED` in `package.json`.
+The app currently has no full-page browsing, voice, executable artifacts, or account sync. Model assets remain on their respective hosts and carry their own terms; this repository is marked `UNLICENSED` in `package.json`.

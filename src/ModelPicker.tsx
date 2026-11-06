@@ -33,7 +33,13 @@ export function ModelPicker({
 }) {
   const picker = useRef<HTMLDetailsElement>(null);
   const [cache, setCache] = useState<Record<string, boolean | null>>({});
-  const busy = ["loading", "writing", "stopping", "removing"].includes(status);
+  const busy = [
+    "loading",
+    "writing",
+    "stopping",
+    "removing",
+    "searching",
+  ].includes(status);
   useEffect(() => {
     let alive = true;
     Promise.all(

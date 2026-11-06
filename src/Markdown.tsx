@@ -29,7 +29,13 @@ function CodeBlock({ children, ...props }: ComponentPropsWithoutRef<"pre">) {
     </div>
   );
 }
-export function Markdown({ text }: { text: string }) {
+export function Markdown({
+  text,
+  sources = [],
+}: {
+  text: string;
+  sources?: { url: string }[];
+}) {
   return (
     <div className="markdown">
       <ReactMarkdown
@@ -37,14 +43,29 @@ export function Markdown({ text }: { text: string }) {
         skipHtml
         components={{
           pre: ({ node: _node, ...props }) => <CodeBlock {...props} />,
-          a: ({ node: _node, ...props }) => (
-            <a {...props} target="_blank" rel="noreferrer noopener" />
-          ),
+          a: ({ node: _node, ...props }) => {
+            const label = String(props.children);
+            const citation = /^\d+$/.test(label)
+              ? sources[Number(label) - 1]
+              : undefined;
+            return (
+              <a
+                {...props}
+                href={citation?.url ?? props.href}
+                target="_blank"
+                rel="noreferrer noopener"
+              />
+            );
+          },
           // Never fetch model-generated remote images; that would disclose the visitor's IP.
           img: ({ alt }) => <span>[Image: {alt || "not loaded"}]</span>,
         }}
       >
-        {text}
+        {text +
+          (sources.length
+            ? "\n\n" +
+              sources.map((s, i) => `[${i + 1}]: <${s.url}>`).join("\n")
+            : "")}
       </ReactMarkdown>
     </div>
   );

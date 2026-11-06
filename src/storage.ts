@@ -1,3 +1,4 @@
+import { validSource } from "./search";
 import { actions } from "./actions";
 import { type Conversation, type Message, messageText } from "./conversations";
 const PREFIX = "local-writer-chat-v1:";
@@ -7,6 +8,13 @@ function validMessage(value: unknown): value is Message {
   const m = value as Message;
   return (
     typeof m.id === "string" &&
+    (m.webSearch === undefined || typeof m.webSearch === "boolean") &&
+    (m.webSources === undefined ||
+      (Array.isArray(m.webSources) &&
+        m.webSources.length <= 4 &&
+        m.webSources.every(validSource))) &&
+    (m.searchQuery === undefined || typeof m.searchQuery === "string") &&
+    (m.searchError === undefined || typeof m.searchError === "string") &&
     (m.role === "user" || m.role === "assistant") &&
     typeof m.content === "string" &&
     (m.action === undefined || Object.hasOwn(actions, m.action)) &&
@@ -88,7 +96,7 @@ export function exportMarkdown(chat: Conversation) {
     chat.messages
       .map(
         (message) =>
-          `## ${message.role === "user" ? "You" : (message.modelLabel ?? "Assistant")}${message.state && message.state !== "complete" ? ` (${message.state})` : ""}\n\n${messageText(message)}`,
+          `## ${message.role === "user" ? "You" : (message.modelLabel ?? "Assistant")}${message.state && message.state !== "complete" ? ` (${message.state})` : ""}\n\n${messageText(message)}${message.webSources?.length ? "\n\nSources:\n" + message.webSources.map((s, i) => `${i + 1}. ${s.title}: ${s.url}`).join("\n") : ""}`,
       )
       .join("\n\n---\n\n")
   );

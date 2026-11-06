@@ -1,3 +1,4 @@
+import type { WebSource } from "./search";
 import type { Action } from "./actions";
 export type Mode = "chat" | "write";
 export interface Attachment {
@@ -6,6 +7,10 @@ export interface Attachment {
 }
 export interface Message {
   id: string;
+  webSearch?: boolean;
+  webSources?: WebSource[];
+  searchQuery?: string;
+  searchError?: string;
   role: "user" | "assistant";
   content: string;
   model?: string;
