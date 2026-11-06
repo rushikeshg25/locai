@@ -651,122 +651,126 @@ export default function App({
                 key={message.id}
                 aria-label={`${message.role === "user" ? "You" : "Assistant"} message`}
               >
-                <div className="message-heading">
-                  <strong>
-                    {message.role === "user"
-                      ? "You"
-                      : (message.modelLabel ?? "Assistant")}
-                  </strong>
-                  {message.mode === "write" && (
-                    <small>{actions[message.action ?? "grammar"].label}</small>
+                <div className="message-body">
+                  <div className="message-heading">
+                    <strong>
+                      {message.role === "user"
+                        ? "You"
+                        : (message.modelLabel ?? "Assistant")}
+                    </strong>
+                    {message.mode === "write" && (
+                      <small>
+                        {actions[message.action ?? "grammar"].label}
+                      </small>
+                    )}
+                  </div>
+                  {message.role === "assistant" &&
+                    (message.reasoning || message.thinking) && (
+                      <details className="reasoning-block">
+                        <summary>
+                          {message.state === "streaming" && message.thinking
+                            ? "Thinking…"
+                            : message.thinking
+                              ? "Thinking interrupted"
+                              : "Thinking"}
+                        </summary>
+                        <div className="reasoning-text">
+                          {message.reasoning || "Preparing…"}
+                        </div>
+                      </details>
+                    )}
+                  {message.role === "assistant" &&
+                    message.reasoning &&
+                    !message.content &&
+                    message.state !== "streaming" && (
+                      <p className="muted">
+                        No final answer was produced. Reasoning may have reached
+                        the output limit or been interrupted.
+                      </p>
+                    )}
+                  <div className="message-content">
+                    {message.role === "user" ? (
+                      <p className="user-text">{message.content}</p>
+                    ) : (
+                      message.content && (
+                        <Markdown
+                          text={message.content}
+                          sources={message.webSources}
+                        />
+                      )
+                    )}
+                  </div>
+                  {message.attachments?.map((file, index) => (
+                    <details className="attachment-preview" key={index}>
+                      <summary>{file.name}</summary>
+                      <pre>{file.content}</pre>
+                    </details>
+                  ))}
+                  {message.state === "streaming" && (
+                    <div
+                      className="reply-progress"
+                      role="status"
+                      aria-atomic="true"
+                    >
+                      <span className="reply-dots" aria-hidden="true">
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                      <span>
+                        {searching === message.id
+                          ? "Searching the web…"
+                          : message.content
+                            ? "Responding…"
+                            : "Thinking…"}
+                      </span>
+                    </div>
                   )}
-                </div>
-                {message.role === "assistant" &&
-                  (message.reasoning || message.thinking) && (
-                    <details className="reasoning-block">
-                      <summary>
-                        {message.state === "streaming" && message.thinking
-                          ? "Thinking…"
-                          : message.thinking
-                            ? "Thinking interrupted"
-                            : "Thinking"}
-                      </summary>
-                      <div className="reasoning-text">
-                        {message.reasoning || "Preparing…"}
-                      </div>
+                  {message.searchQuery && (
+                    <small className="search-query">
+                      {searching === message.id ? "Searching" : "Searched"}:{" "}
+                      {message.searchQuery}
+                    </small>
+                  )}
+                  {message.searchError && (
+                    <p role="alert">{message.searchError}</p>
+                  )}
+                  {!!message.webSources?.length && (
+                    <details className="web-sources">
+                      <summary>Sources · {message.webSources.length}</summary>
+                      <ol>
+                        {message.webSources.map((source) => (
+                          <li key={source.url}>
+                            <a
+                              href={source.url}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                            >
+                              {source.title}
+                            </a>
+                            <small>{new URL(source.url).hostname}</small>
+                            <p>{source.snippet}</p>
+                          </li>
+                        ))}
+                      </ol>
                     </details>
                   )}
-                {message.role === "assistant" &&
-                  message.reasoning &&
-                  !message.content &&
-                  message.state !== "streaming" && (
+                  {message.state === "stopped" && (
+                    <small>Stopped · incomplete response</small>
+                  )}
+                  {message.state === "error" && (
+                    <small>Response failed · your message is preserved</small>
+                  )}
+                  {message.truncated && (
+                    <p className="muted">Response reached the output limit.</p>
+                  )}
+                  {!!message.omitted && (
                     <p className="muted">
-                      No final answer was produced. Reasoning may have reached
-                      the output limit or been interrupted.
+                      {message.omitted} older messages were left out of this
+                      request to fit the model.
                     </p>
                   )}
-                <div className="message-content">
-                  {message.role === "user" ? (
-                    <p className="user-text">{message.content}</p>
-                  ) : (
-                    message.content && (
-                      <Markdown
-                        text={message.content}
-                        sources={message.webSources}
-                      />
-                    )
-                  )}
                 </div>
-                {message.attachments?.map((file, index) => (
-                  <details className="attachment-preview" key={index}>
-                    <summary>{file.name}</summary>
-                    <pre>{file.content}</pre>
-                  </details>
-                ))}
-                {message.state === "streaming" && (
-                  <div
-                    className="reply-progress"
-                    role="status"
-                    aria-atomic="true"
-                  >
-                    <span className="reply-dots" aria-hidden="true">
-                      <span />
-                      <span />
-                      <span />
-                    </span>
-                    <span>
-                      {searching === message.id
-                        ? "Searching the web…"
-                        : message.content
-                          ? "Responding…"
-                          : "Thinking…"}
-                    </span>
-                  </div>
-                )}
-                {message.searchQuery && (
-                  <small className="search-query">
-                    {searching === message.id ? "Searching" : "Searched"}:{" "}
-                    {message.searchQuery}
-                  </small>
-                )}
-                {message.searchError && (
-                  <p role="alert">{message.searchError}</p>
-                )}
-                {!!message.webSources?.length && (
-                  <details className="web-sources">
-                    <summary>Sources · {message.webSources.length}</summary>
-                    <ol>
-                      {message.webSources.map((source) => (
-                        <li key={source.url}>
-                          <a
-                            href={source.url}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                          >
-                            {source.title}
-                          </a>
-                          <small>{new URL(source.url).hostname}</small>
-                          <p>{source.snippet}</p>
-                        </li>
-                      ))}
-                    </ol>
-                  </details>
-                )}
-                {message.state === "stopped" && (
-                  <small>Stopped · incomplete response</small>
-                )}
-                {message.state === "error" && (
-                  <small>Response failed · your message is preserved</small>
-                )}
-                {message.truncated && (
-                  <p className="muted">Response reached the output limit.</p>
-                )}
-                {!!message.omitted && (
-                  <p className="muted">
-                    {message.omitted} older messages were left out of this
-                    request to fit the model.
-                  </p>
-                )}
                 <div className="message-tools">
                   {message.content && (
                     <Button
