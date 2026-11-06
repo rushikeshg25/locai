@@ -18,7 +18,7 @@ npm run build
 npm run preview -- --host 127.0.0.1 --port 4174
 ```
 
-Open the URL printed by Vite. Updates activate after existing app tabs close, so an update does not discard an active draft.
+Open the URL printed by Vite. Updates activate in the background without reloading an active draft. The next normal reload uses the updated app cache; offline reloads remain available.
 
 ## Docker
 
@@ -42,9 +42,10 @@ This value is public client configuration, not a secret. Changing it requires re
 ## Chat and writing
 
 - In Write mode, **Writing preferences** accepts protected terms and a custom instruction. Missing protected terms are flagged; retries and edit/resend retain the original preferences. Preferences are stored with the request only when you save its conversation.
-- The desktop sidebar searches conversation titles and messages. On narrow screens, use the Conversation selector.
+- The collapsible chat sidebar searches titles and messages. On narrow screens, open the chat drawer; Escape or a backdrop click closes it.
+- Save, export and delete controls are in the header’s Chat options menu. Reply actions appear on hover or keyboard focus on desktop and remain visible on touch screens.
 - **Chat** is the default. Completed turns provide context for follow-up questions. **Write** offers ten editing actions, with original/revised word-level comparison.
-- Enter sends; Ctrl+Enter (⌘+Enter on Mac) or Shift+Enter inserts a newline. The composer grows with the draft and respects IME composition.
+- Enter sends; Ctrl+Enter (⌘+Enter on Mac) or Shift+Enter inserts a newline. The composer grows with the draft and available width, scrolling only at its height limit, and respects IME composition. Sending without a loaded model shows a warning with a model-picker action and keeps your draft.
 - Replies render Markdown, tables and code with a copy button. Generated HTML is disabled and remote images are not fetched.
 - Copy, edit a reply, reuse it as input, or branch from it. Retry and edit/resend create branches and preserve the original conversation. Each reply identifies its model.
 - New chat keeps the loaded model. Stop preserves partial output and normally keeps the model ready. If cancellation stalls, the worker is unloaded after five seconds.
@@ -55,16 +56,16 @@ This value is public client configuration, not a secret. Changing it requires re
 
 ## Models and downloads
 
-Open **Models** beside Send. Browser models need HTTPS or localhost, a WebGPU-capable browser, and hardware acceleration. Model selection is remembered. Initial model downloads are explicit; optional automatic loading starts only if the selected weights are cached. Missing runtime/config/tokenizer files can still need internet.
+Open **Models** beside Send. Browser models need HTTPS or localhost, a WebGPU-capable browser, and hardware acceleration. Model selection is remembered. Initial model downloads are explicit; automatic loading is enabled by default and starts only if the selected weights are cached; turn it off with Auto-load downloaded model. Missing runtime/config/tokenizer files can still need internet.
 
 | Model         | Approximate weights | Estimated GPU memory |
 | ------------- | ------------------- | -------------------- |
 | Qwen 2.5 0.5B | 280 MB              | 945 MB               |
 | Qwen 2.5 1.5B | 870 MB              | 1.6 GB               |
 
-Runtime and browser overhead are additional. The picker distinguishes downloaded weights from a model loaded in memory, shows estimated site storage, and can request persistent browser storage. Unload frees the worker; Remove model cache deletes the selected WebLLM model files. Browser eviction, interrupted downloads, or missing runtime files can prevent offline use.
+Runtime and browser overhead are additional. The picker distinguishes downloaded weights from a model loaded in memory, shows estimated site storage, and can request persistent browser storage. Unload frees the worker; Delete downloaded model confirms before deleting the selected WebLLM model files. Browser eviction, interrupted downloads, or missing runtime files can prevent offline use.
 
-Loading reports runtime progress, elapsed time and a stalled-update hint. The runtime does not expose byte progress for every phase, so an indeterminate bar is deliberate. Stop cancels loading; use Models to retry. Initialization times out after ten minutes and generation after two minutes.
+The Models dropdown contains loading progress, elapsed time, and a stalled-update hint without moving the composer. Sending before a model is loaded opens this dropdown with a warning and keeps the draft. The runtime does not expose byte progress for every phase, so an indeterminate bar is deliberate. Stop cancels loading; use Models to retry. Initialization times out after ten minutes and generation after two minutes.
 
 If the runtime host is slow, set `VITE_RUNTIME_BASE_URL` to a trailing-slash URL in ignored `.env.local`, place the exact Wasm files named by the installed WebLLM configuration at that URL, and rebuild. Weights still come from Hugging Face. Without this setting, WebLLM uses its default runtime host. Do not commit downloaded model assets.
 

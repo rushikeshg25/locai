@@ -1,4 +1,6 @@
 const paths = {
+  search: "M21 21l-6-6 M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0",
+  sidebar: "M3 4h18v16H3z M9 4v16",
   branch:
     "M6 3v12a4 4 0 0 0 4 4h8 M6 7h8a4 4 0 0 0 4-4 M15 16l3 3-3 3 M15 6l3-3 3 3",
   plus: "M12 5v14 M5 12h14",

@@ -9,7 +9,7 @@ test("real model generates locally and reloads offline", async ({
   );
   test.setTimeout(600_000);
   await page.goto("/");
-  const load = page.getByRole("button", { name: "Download / load model" });
+  const load = page.getByRole("button", { name: "Download model" });
   await page.getByLabel("Models", { exact: true }).click();
   await expect(load).toBeEnabled({ timeout: 15_000 });
   await load.click();
@@ -40,8 +40,6 @@ test("real model generates locally and reloads offline", async ({
   });
   await context.setOffline(true);
   await page.reload();
-  await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("button", { name: "Load selected model" }).click();
   await expect(
     page.getByRole("button", { name: "Model ready", includeHidden: true }),
   ).toBeAttached({

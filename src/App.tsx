@@ -38,7 +38,6 @@ import {
   exportMarkdown,
   readAttachments,
 } from "./storage";
-import { LoadingStatus } from "./LoadingStatus";
 import { getPreference, setPreference, preferredModel } from "./preferences";
 import { prepareMessages, missingTerms } from "./prompts";
 export default function App({
@@ -49,13 +48,43 @@ export default function App({
   gpuCheck?: () => Promise<boolean>;
 }) {
   const { theme, toggleTheme } = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => !(window.matchMedia?.("(max-width: 900px)").matches ?? false),
+  );
+  const chatMenu = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const dismiss = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !chatMenu.current?.contains(event.target) &&
+        chatMenu.current
+      )
+        chatMenu.current.open = false;
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && chatMenu.current?.open) {
+        chatMenu.current.open = false;
+        chatMenu.current.querySelector("summary")?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", dismiss);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", dismiss);
+      document.removeEventListener("keydown", escape);
+    };
+  }, []);
   const [browserWriter] = useState(() => supplied ?? new LocalWriter());
   const writer = browserWriter;
   const [autoLoad, setAutoLoad] = useState(
-    () => getPreference("auto-load", "false") === "true",
+    () => getPreference("auto-load", "true") === "true",
   );
   const autoAttempted = useRef(false);
   const session = useWriter(writer);
+  const [modelRequired, setModelRequired] = useState(false);
+  useEffect(() => {
+    if (session.status === "ready") setModelRequired(false);
+  }, [session.status]);
   const currentStatus = useRef(session.status);
   currentStatus.current = session.status;
   const [supported, setSupported] = useState<boolean | null>(null);
@@ -180,10 +209,26 @@ export default function App({
     return () => window.removeEventListener("offline-cache-failed", failed);
   }, []);
   useLayoutEffect(() => {
-    if (composer.current) {
-      composer.current.style.height = "auto";
-      composer.current.style.height = `${Math.min(composer.current.scrollHeight, 240)}px`;
-    }
+    const input = composer.current;
+    if (!input) return;
+    const resize = () => {
+      input.style.overflowY = "hidden";
+      input.style.height = "auto";
+      const height = input.scrollHeight;
+      input.style.height = `${Math.min(height + 1, 240)}px`;
+      input.style.overflowY = height > 240 ? "auto" : "hidden";
+    };
+    resize();
+    if (typeof ResizeObserver === "undefined") return;
+    let width = input.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (input.clientWidth !== width) {
+        width = input.clientWidth;
+        resize();
+      }
+    });
+    observer.observe(input);
+    return () => observer.disconnect();
   }, [text]);
   useLayoutEffect(() => {
     if (nearBottom.current && scroll.current)
@@ -238,7 +283,18 @@ export default function App({
     requestTerms = terms,
     requestInstruction = instruction,
   ) {
-    if (busy || session.status !== "ready") return;
+    if (busy) return;
+    if (session.status !== "ready") {
+      setModelRequired(true);
+      const picker = composer.current
+        ?.closest(".composer")
+        ?.querySelector<HTMLDetailsElement>(".model-settings");
+      if (picker) {
+        picker.open = true;
+        picker.querySelector("summary")?.focus();
+      }
+      return;
+    }
     const error = inputError(source);
     if (error) {
       setFeedback(error);
@@ -342,26 +398,30 @@ export default function App({
     }
   }
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${sidebarOpen ? "sidebar-open" : ""}`}>
       <ConversationSidebar
         chats={chats}
         active={chat.id}
         busy={busy}
         onSelect={selectChat}
+        open={sidebarOpen}
+        onOpen={setSidebarOpen}
+        onNew={newChat}
       />
       <main className="workspace">
         <header>
-          <h1>Local Writer</h1>
-          <div className="header-tools">
+          <div className="workspace-heading">
             <Button
-              className="secondary"
-              disabled={busy}
-              onClick={newChat}
-              title="Start an empty conversation; keep the model loaded"
+              className="icon-button secondary"
+              aria-label="Open chats"
+              title="Show chats"
+              onClick={() => setSidebarOpen(true)}
             >
-              <Icon name="plus" />
-              New chat
+              <Icon name="sidebar" />
             </Button>
+            <h1>Local Writer</h1>
+          </div>
+          <div className="header-tools">
             <Button
               className="icon-button secondary"
               aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
@@ -378,106 +438,105 @@ export default function App({
             >
               <Icon name="info" />
             </Button>
+            <div className="chat-controls">
+              <details ref={chatMenu} className="chat-menu">
+                <summary aria-label="Chat options">
+                  <Icon name="more" />
+                </summary>
+                <div className="chat-menu-panel">
+                  <small>
+                    {chat.saved ? "Saved on this device" : "Temporary chat"}
+                  </small>
+                  <Button
+                    className="secondary"
+                    disabled={busy || !chat.messages.length}
+                    onClick={() => {
+                      try {
+                        if (chat.saved) {
+                          forgetChat(chat.id);
+                          update(chat.id, (item) => ({
+                            ...item,
+                            saved: false,
+                          }));
+                          setFeedback(
+                            "Removed from device storage. This tab still has the conversation.",
+                          );
+                        } else {
+                          saveChat(chat);
+                          update(chat.id, (item) => ({ ...item, saved: true }));
+                          setFeedback(
+                            "Saved on this device. Future changes to this chat will also be saved.",
+                          );
+                        }
+                      } catch {
+                        setFeedback(
+                          "Could not change browser storage. Export the conversation to keep a copy.",
+                        );
+                      }
+                    }}
+                  >
+                    <Icon name="save" />
+                    {chat.saved ? "Make temporary" : "Save on device"}
+                  </Button>
+                  <Button
+                    className="secondary"
+                    disabled={!chat.messages.length}
+                    onClick={() => {
+                      const url = URL.createObjectURL(
+                        new Blob([exportMarkdown(chat)], {
+                          type: "text/markdown;charset=utf-8",
+                        }),
+                      );
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = "local-writer-chat.md";
+                      link.click();
+                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    }}
+                  >
+                    <Icon name="download" />
+                    Export
+                  </Button>
+                  <Button
+                    className="secondary"
+                    disabled={busy}
+                    title="Delete this conversation and its saved copy"
+                    onClick={() => {
+                      if (
+                        !window.confirm(
+                          "Delete this conversation and its saved copy?",
+                        )
+                      )
+                        return;
+                      try {
+                        forgetChat(chat.id);
+                        setChats((items) => {
+                          const remaining = items.filter(
+                            (item) => item.id !== chat.id,
+                          );
+                          return remaining.length
+                            ? remaining
+                            : [newConversation()];
+                        });
+                        setActive("");
+                        setText("");
+                        replaceAttachments([]);
+                        setResend(null);
+                      } catch {
+                        setFeedback(
+                          "Could not delete the saved copy. Browser storage may be blocked.",
+                        );
+                      }
+                    }}
+                  >
+                    <Icon name="clear" />
+                    Delete
+                  </Button>
+                </div>
+              </details>
+            </div>
           </div>
         </header>
-        <div className="chat-controls">
-          <small>
-            {chat.saved ? "Saved on this device" : "Temporary chat"}
-          </small>
-          <Button
-            className="secondary"
-            disabled={busy || !chat.messages.length}
-            onClick={() => {
-              try {
-                if (chat.saved) {
-                  forgetChat(chat.id);
-                  update(chat.id, (item) => ({ ...item, saved: false }));
-                  setFeedback(
-                    "Removed from device storage. This tab still has the conversation.",
-                  );
-                } else {
-                  saveChat(chat);
-                  update(chat.id, (item) => ({ ...item, saved: true }));
-                  setFeedback(
-                    "Saved on this device. Future changes to this chat will also be saved.",
-                  );
-                }
-              } catch {
-                setFeedback(
-                  "Could not change browser storage. Export the conversation to keep a copy.",
-                );
-              }
-            }}
-          >
-            <Icon name="save" />
-            {chat.saved ? "Make temporary" : "Save on device"}
-          </Button>
-          <Button
-            className="secondary"
-            disabled={!chat.messages.length}
-            onClick={() => {
-              const url = URL.createObjectURL(
-                new Blob([exportMarkdown(chat)], {
-                  type: "text/markdown;charset=utf-8",
-                }),
-              );
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = "local-writer-chat.md";
-              link.click();
-              setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }}
-          >
-            <Icon name="download" />
-            Export
-          </Button>
-          <Button
-            className="secondary"
-            disabled={busy}
-            title="Delete this conversation and its saved copy"
-            onClick={() => {
-              if (
-                !window.confirm("Delete this conversation and its saved copy?")
-              )
-                return;
-              try {
-                forgetChat(chat.id);
-                setChats((items) => {
-                  const remaining = items.filter((item) => item.id !== chat.id);
-                  return remaining.length ? remaining : [newConversation()];
-                });
-                setActive("");
-                setText("");
-                replaceAttachments([]);
-                setResend(null);
-              } catch {
-                setFeedback(
-                  "Could not delete the saved copy. Browser storage may be blocked.",
-                );
-              }
-            }}
-          >
-            <Icon name="clear" />
-            Delete
-          </Button>
-        </div>
-        {chats.length > 1 && (
-          <label className="conversation-switch">
-            Conversation{" "}
-            <select
-              aria-label="Conversation"
-              value={chat.id}
-              disabled={busy}
-              onChange={(event) => selectChat(event.target.value)}
-            >
-              {chats.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.title}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
         {supported === false && (
           <p role="alert" className="banner">
             WebGPU is unavailable. Use a recent desktop browser with hardware
@@ -508,8 +567,6 @@ export default function App({
             {!chat.messages.length && (
               <BrowserWelcome
                 ready={session.status === "ready"}
-                supported={supported}
-                model={selected.label}
                 onPrompt={(prompt) => {
                   setText(prompt);
                   composer.current?.focus();
@@ -957,7 +1014,7 @@ export default function App({
               >
                 <Icon name="attach" />
               </Button>
-              <span id="composer-shortcuts" className="muted keyboard-hint">
+              <span id="composer-shortcuts" className="sr-only">
                 Enter to send · Ctrl/⌘ + Enter or Shift + Enter for a new line
               </span>
               <div className="run-bar">
@@ -965,6 +1022,8 @@ export default function App({
                   writer={writer}
                   model={model}
                   status={session.status}
+                  progress={session.progress}
+                  required={modelRequired}
                   supported={supported}
                   autoLoad={autoLoad}
                   onAutoLoad={(value) => {
@@ -1006,7 +1065,7 @@ export default function App({
                         ? "Send message"
                         : "Open Models to load a model"
                     }
-                    disabled={session.status !== "ready" || !!inputError(text)}
+                    disabled={!!inputError(text)}
                     onClick={() => void send()}
                   >
                     <Icon name="send" />
@@ -1015,11 +1074,8 @@ export default function App({
               </div>
             </div>
           </div>
-          {session.status === "loading" && (
-            <LoadingStatus progress={session.progress} />
-          )}
           {(session.error || feedback || session.notice) && (
-            <p role="status" className="feedback">
+            <p role="status" className="feedback transient-notice">
               {session.error || feedback || session.notice}
             </p>
           )}
@@ -1033,7 +1089,11 @@ export default function App({
               </p>
             </details>
           )}
-          {text && inputError(text) && <p role="alert">{inputError(text)}</p>}
+          {text && inputError(text) && (
+            <p role="alert" className="transient-notice">
+              {inputError(text)}
+            </p>
+          )}
         </section>
         <dialog
           ref={info}

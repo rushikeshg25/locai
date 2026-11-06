@@ -28,7 +28,7 @@ test("collect real browser-model outputs for human quality review", async ({
   await page.getByLabel("Models", { exact: true }).click();
   await page.getByRole("radio", { name: new RegExp(size) }).check();
   const started = Date.now();
-  await page.getByRole("button", { name: "Download / load model" }).click();
+  await page.getByRole("button", { name: "Download model" }).click();
   await expect(
     page.getByRole("button", { name: "Model ready", includeHidden: true }),
   ).toBeAttached({ timeout: 600000 });

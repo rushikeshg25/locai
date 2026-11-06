@@ -30,7 +30,7 @@ function setup(supported = true, cached = false) {
 }
 async function ready() {
   fireEvent.click(screen.getByLabelText("Models"));
-  const load = screen.getByRole("button", { name: "Download / load model" });
+  const load = await screen.findByRole("button", { name: "Download model" });
   await waitFor(() => expect(load).toBeEnabled());
   fireEvent.click(load);
   await screen.findByRole("button", { name: "Model ready" });
@@ -48,9 +48,7 @@ it("requires explicit loading and disables unsupported devices", async () => {
   const writer = setup(false);
   await screen.findByText(/WebGPU is unavailable/);
   fireEvent.click(screen.getByLabelText("Models"));
-  expect(
-    screen.getByRole("button", { name: "Download / load model" }),
-  ).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Download model" })).toBeDisabled();
   expect(writer.load).not.toHaveBeenCalled();
 });
 it("defaults to chat and sends prior completed messages", async () => {
@@ -112,7 +110,9 @@ it("preserves failed messages and forks a retry", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Retry" }));
   await screen.findByText("We might ship Friday.");
   expect(
-    screen.getByLabelText("Conversation").querySelectorAll("option"),
+    screen
+      .getByRole("navigation", { name: "Conversations" })
+      .querySelectorAll("button"),
   ).toHaveLength(2);
 });
 it("edit and resend keeps the original branch", async () => {
@@ -122,7 +122,9 @@ it("edit and resend keeps the original branch", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Edit & resend" }));
   await send("Changed");
   expect(
-    screen.getByLabelText("Conversation").querySelectorAll("option"),
+    screen
+      .getByRole("navigation", { name: "Conversations" })
+      .querySelectorAll("button"),
   ).toHaveLength(2);
   expect(writer.generate).toHaveBeenLastCalledWith(
     expect.objectContaining({ text: "Changed", history: [] }),
@@ -179,14 +181,7 @@ it("saves only after opt-in, restores saved history and can make it temporary", 
   await screen.findByText("Saved on this device");
   cleanup();
   setup();
-  const chooser = screen.getByLabelText("Conversation");
-  const options = Array.from(chooser.querySelectorAll("option"));
-  fireEvent.change(chooser, {
-    target: {
-      value: options.find((option) => option.textContent === "Keep this")!
-        .value,
-    },
-  });
+  fireEvent.click(screen.getByRole("button", { name: "Open chat: Keep this" }));
   expect(screen.getByText("We might ship Friday.")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Make temporary" }));
   expect(
@@ -214,8 +209,7 @@ it("turns selected draft text into a focused writing request", async () => {
     ),
   );
 });
-it("loads cached weights automatically only after opting in", async () => {
-  localStorage.setItem("local-writer-auto-load", "true");
+it("loads downloaded weights automatically by default", async () => {
   const writer = setup(true, true);
   await waitFor(() => expect(writer.load).toHaveBeenCalledOnce());
 });
@@ -226,7 +220,9 @@ it("can branch from a reply without making another model request", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Branch" }));
   expect(writer.generate).toHaveBeenCalledOnce();
   expect(
-    screen.getByLabelText("Conversation").querySelectorAll("option"),
+    screen
+      .getByRole("navigation", { name: "Conversations" })
+      .querySelectorAll("button"),
   ).toHaveLength(2);
   await send("Continue here");
   expect(writer.generate).toHaveBeenLastCalledWith(
@@ -381,4 +377,18 @@ it("shows reply progress until generation completes", async () => {
   await waitFor(() =>
     expect(screen.queryByText("Responding…")).not.toBeInTheDocument(),
   );
+});
+
+it("respects disabling automatic model loading", async () => {
+  localStorage.setItem("local-writer-auto-load", "false");
+  const writer = setup(true, true);
+  fireEvent.click(screen.getByLabelText("Models"));
+  await screen.findByRole("button", { name: "Load from device" });
+  expect(writer.load).not.toHaveBeenCalled();
+});
+it("does not auto-download missing models", async () => {
+  const writer = setup(true, false);
+  fireEvent.click(screen.getByLabelText("Models"));
+  await screen.findByRole("button", { name: "Download model" });
+  expect(writer.load).not.toHaveBeenCalled();
 });

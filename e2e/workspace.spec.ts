@@ -47,7 +47,7 @@ test("loads desktop and mobile without overflow or model download", async ({
   }
   await expect(
     page.getByRole("button", { name: "Send message" }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   expect(external).toEqual([]);
   expect(errors).toEqual([]);
 });
