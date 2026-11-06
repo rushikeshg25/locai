@@ -108,16 +108,3 @@ export function prepareMessages(request: WritingRequest) {
   }
   return { messages: [system, ...history, latest], omitted, used, budget };
 }
-
-// Conversation space remaining after fixed instructions and reply reserves.
-// This remains a conservative byte budget, not measured tokenizer usage.
-export function conversationBudgetUsage(request: WritingRequest) {
-  const prepared = prepareMessages(request);
-  const fixed =
-    new TextEncoder().encode(String(prepared.messages[0].content ?? ""))
-      .length + 32;
-  return Math.max(
-    0,
-    Math.min(1, (prepared.used - fixed) / Math.max(1, prepared.budget - fixed)),
-  );
-}

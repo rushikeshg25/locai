@@ -10,7 +10,6 @@ export function ModelPicker({
   model,
   status,
   progress,
-  contextUsage,
   required = false,
   supported,
   onSelect,
@@ -30,7 +29,6 @@ export function ModelPicker({
   supported: boolean | null;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
-  contextUsage: number;
 }) {
   const picker = useRef<HTMLDetailsElement>(null);
   const [cache, setCache] = useState<Record<string, boolean | null>>({});
@@ -70,11 +68,6 @@ export function ModelPicker({
         aria-label="Models"
         title="Select, download or manage writing models"
       >
-        <LoadingStatus
-          progress={{ value: contextUsage, message: "" }}
-          label="Conversation budget estimate"
-          indeterminate={false}
-        />
         <span className="model-name">
           {models.find((item) => item.id === model)?.label ?? model}
         </span>

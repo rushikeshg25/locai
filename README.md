@@ -133,23 +133,21 @@ Select text in a message and choose **Cite** to append it as a quote to your dra
 
 Drafts are limited to **500 words and 6,000 characters**. The model’s context budget may impose a smaller limit.
 
-### Context indicator
+### Context limits
 
-The ring beside the model name estimates how much conversation input space is used after system instructions and reply space are reserved.
-
-It uses a **conservative byte-based budget**, not measured token usage or GPU memory. Older conversation turns may be excluded to fit. An oversized newest request is rejected rather than silently truncated.
+Input limits use a conservative byte-based budget. Older conversation turns may be excluded to fit. An oversized newest request is rejected rather than silently truncated.
 
 ## Models
 
-| Model | Approximate weights | Estimated GPU memory |
-| --- | ---: | ---: |
-| Phi 3.5 Mini | 2.15 GB | 3.7 GB |
-| Llama 3.2 3B | 1.81 GB | 2.3 GB |
-| Qwen 2.5 3B | 1.74 GB | 2.5 GB |
-| Qwen 2.5 1.5B | 870 MB | 1.6 GB |
-| Llama 3.2 1B | 695 MB | 880 MB |
-| Qwen 3 0.6B | 335 MB | 1.4 GB |
-| Qwen 2.5 0.5B | 280 MB | 945 MB |
+| Model         | Approximate weights | Estimated GPU memory |
+| ------------- | ------------------: | -------------------: |
+| Phi 3.5 Mini  |             2.15 GB |               3.7 GB |
+| Llama 3.2 3B  |             1.81 GB |               2.3 GB |
+| Qwen 2.5 3B   |             1.74 GB |               2.5 GB |
+| Qwen 2.5 1.5B |              870 MB |               1.6 GB |
+| Llama 3.2 1B  |              695 MB |               880 MB |
+| Qwen 3 0.6B   |              335 MB |               1.4 GB |
+| Qwen 2.5 0.5B |              280 MB |               945 MB |
 
 Qwen 2.5 0.5B is the default. These estimates exclude some runtime and browser overhead and do not guarantee device compatibility.
 
@@ -192,13 +190,13 @@ Network access is used for:
 
 Generated HTML is disabled, and model-generated remote images are not fetched automatically.
 
-| Data | Storage |
-| --- | --- |
-| Saved chats and attachments | Browser local storage |
-| Downloaded model files | Browser cache |
-| Theme and selected model | Browser local storage |
-| Temporary chats and unsent drafts | Current tab memory |
-| Production app files | Service-worker cache |
+| Data                              | Storage               |
+| --------------------------------- | --------------------- |
+| Saved chats and attachments       | Browser local storage |
+| Downloaded model files            | Browser cache         |
+| Theme and selected model          | Browser local storage |
+| Temporary chats and unsent drafts | Current tab memory    |
+| Production app files              | Service-worker cache  |
 
 Saved conversations are **not encrypted by Locai**. Clearing site data removes chats and downloads. Browsers may also evict cached model files.
 
@@ -208,28 +206,28 @@ Offline use requires the production app and all model dependencies to be cached.
 
 ## Keyboard controls
 
-| Shortcut | Action |
-| --- | --- |
-| Enter | Send |
-| Shift+Enter | New line |
-| Ctrl+Enter / Command+Enter | New line |
-| Tab / Shift+Tab | Move between controls |
-| Escape | Dismiss an open menu or dialog |
+| Shortcut                   | Action                         |
+| -------------------------- | ------------------------------ |
+| Enter                      | Send                           |
+| Shift+Enter                | New line                       |
+| Ctrl+Enter / Command+Enter | New line                       |
+| Tab / Shift+Tab            | Move between controls          |
+| Escape                     | Dismiss an open menu or dialog |
 
 IME composition does not submit a message. Controls have accessible labels and visible focus states.
 
 ## Troubleshooting
 
-| Issue | What to try |
-| --- | --- |
-| WebGPU unavailable | Enable hardware acceleration and use a supported desktop browser over HTTPS or localhost. |
-| Model loads after every refresh | Expected: cached weights must be prepared in GPU memory again. |
-| Model downloads again | Check the browser profile, hostname, port, cleared site data, or cache eviction. |
-| Download appears stuck | Check the model’s progress ring. Stop and select the model again to retry. |
-| Large model fails to load | Try a smaller model and close other GPU-heavy applications or tabs. |
-| Web search fails | Check that SearXNG is running and reachable. Search engines may rate-limit requests or require CAPTCHAs. |
-| Old interface appears | Allow the service worker to update, then reload. Avoid clearing all site data first. |
-| Chat is missing | Check the same browser profile and origin, and whether the chat was temporary. |
+| Issue                           | What to try                                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| WebGPU unavailable              | Enable hardware acceleration and use a supported desktop browser over HTTPS or localhost.                |
+| Model loads after every refresh | Expected: cached weights must be prepared in GPU memory again.                                           |
+| Model downloads again           | Check the browser profile, hostname, port, cleared site data, or cache eviction.                         |
+| Download appears stuck          | Check the model’s progress ring. Stop and select the model again to retry.                               |
+| Large model fails to load       | Try a smaller model and close other GPU-heavy applications or tabs.                                      |
+| Web search fails                | Check that SearXNG is running and reachable. Search engines may rate-limit requests or require CAPTCHAs. |
+| Old interface appears           | Allow the service worker to update, then reload. Avoid clearing all site data first.                     |
+| Chat is missing                 | Check the same browser profile and origin, and whether the chat was temporary.                           |
 
 Model loading times out after ten minutes. Generation times out after two minutes.
 
@@ -263,17 +261,17 @@ See [`docs/evaluation.md`](docs/evaluation.md) for model-output evaluation.
 
 ### Project structure
 
-| Area | Files |
-| --- | --- |
-| Chat workspace | `src/App.tsx`, `src/ConversationSidebar.tsx` |
-| Model selection | `src/ModelPicker.tsx`, `src/models.ts` |
-| Inference and lifecycle | `src/inference.ts`, `src/inference.worker.ts`, `src/useWriter.ts` |
-| Persona and context | `src/persona.ts`, `src/prompts.ts` |
-| Conversations and storage | `src/conversations.ts`, `src/storage.ts` |
-| Search | `src/search.ts`, `docker/searxng/settings.yml` |
-| Mobile notice | `src/MobileNotice.tsx` |
-| Offline app caching | `src/offline.ts`, `vite.config.ts` |
-| Tests | `src/*.test.*`, `e2e/` |
+| Area                      | Files                                                             |
+| ------------------------- | ----------------------------------------------------------------- |
+| Chat workspace            | `src/App.tsx`, `src/ConversationSidebar.tsx`                      |
+| Model selection           | `src/ModelPicker.tsx`, `src/models.ts`                            |
+| Inference and lifecycle   | `src/inference.ts`, `src/inference.worker.ts`, `src/useWriter.ts` |
+| Persona and context       | `src/persona.ts`, `src/prompts.ts`                                |
+| Conversations and storage | `src/conversations.ts`, `src/storage.ts`                          |
+| Search                    | `src/search.ts`, `docker/searxng/settings.yml`                    |
+| Mobile notice             | `src/MobileNotice.tsx`                                            |
+| Offline app caching       | `src/offline.ts`, `vite.config.ts`                                |
+| Tests                     | `src/*.test.*`, `e2e/`                                            |
 
 ## Limitations
 

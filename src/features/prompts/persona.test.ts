@@ -19,20 +19,3 @@ it("keeps Locai's persona in the system role and the user's request unchanged", 
   const budget = prepareMessages({ ...request, reasoning: true });
   expect(budget.budget - budget.used).toBeGreaterThan(800);
 });
-it("excludes fixed instructions from the conversation budget ring", async () => {
-  const { conversationBudgetUsage } = await import("./prompts");
-  const request = {
-    mode: "chat" as const,
-    action: "grammar" as const,
-    text: "",
-    terms: "",
-    instruction: "",
-  };
-  expect(conversationBudgetUsage(request)).toBe(0);
-  expect(conversationBudgetUsage({ ...request, text: "Hi" })).toBeLessThan(
-    0.01,
-  );
-  expect(
-    conversationBudgetUsage({ ...request, text: "a".repeat(1000) }),
-  ).toBeGreaterThan(0.4);
-});
