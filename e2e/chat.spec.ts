@@ -204,10 +204,8 @@ test("model loading uses a row progress ring without moving the composer", async
     expect((await input.boundingBox())!.y).toBe(before!.y);
     expect(await page.locator(".model-name").boundingBox()).toEqual(nameBefore);
     await expect(
-      page
-        .locator(".model-settings summary")
-        .getByRole("progressbar", { name: "Conversation budget estimate" }),
-    ).toBeVisible();
+      page.locator(".model-settings summary").getByRole("progressbar"),
+    ).toHaveCount(0);
     await expect(
       page.getByText("Loaded in memory", { exact: true }),
     ).toBeAttached();

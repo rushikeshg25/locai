@@ -42,11 +42,7 @@ import {
   setPreference,
   preferredModel,
 } from "../shared/storage/preferences";
-import {
-  prepareMessages,
-  missingTerms,
-  conversationBudgetUsage,
-} from "../features/prompts/prompts";
+import { prepareMessages, missingTerms } from "../features/prompts/prompts";
 export default function App({
   writer: supplied,
   gpuCheck = checkGPU,
@@ -453,24 +449,6 @@ export default function App({
       state: result.state,
       truncated: result.truncated,
     });
-  }
-  let contextUsage = 0;
-  if (text.trim() || chat.messages.length || attachments.length) {
-    try {
-      contextUsage = conversationBudgetUsage({
-        reasoning: reasoningEnabled && supportsReasoning(selected.id),
-        text: messageText({ content: text, attachments }),
-        mode: "chat",
-        action,
-        terms: "",
-        instruction: "",
-        history: conversationHistory(resend ?? chat.messages),
-        contextWindow: 4096,
-      });
-    } catch {
-      // Sending still reports the full budget error; show a full ring meanwhile.
-      contextUsage = 1;
-    }
   }
   async function copy(content: string) {
     try {
@@ -1047,7 +1025,6 @@ export default function App({
                   model={model}
                   status={searching ? "searching" : session.status}
                   progress={session.progress}
-                  contextUsage={contextUsage}
                   required={modelRequired}
                   supported={supported}
                   reasoning={reasoningEnabled}
