@@ -64,14 +64,11 @@ test("reloads the cached app offline without retaining drafts", async ({
   await expect(page.getByLabel("Your text")).toHaveValue("Offline draft");
 });
 
-test("model picker keeps selections open and dismisses outside or with Escape", async ({
-  page,
-}) => {
+test("model picker dismisses outside or with Escape", async ({ page }) => {
   await page.goto("/");
   const trigger = page.getByLabel("Models", { exact: true });
   const picker = page.locator(".model-settings");
   await trigger.click();
-  await page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }).check();
   await expect(picker).toHaveAttribute("open", "");
   await page.getByRole("heading", { name: "Locai" }).click();
   await expect(picker).not.toHaveAttribute("open");
@@ -98,15 +95,11 @@ test("expanded model catalog keeps actions separated and reachable", async ({
       /Qwen 3 0.6B/,
       /Qwen 2.5 0.5B/,
     ]);
-    await page.getByRole("radio", { name: /Phi 3.5 Mini/ }).check();
+    await expect(
+      page.getByRole("button", { name: /Download model|Unload/ }),
+    ).toHaveCount(0);
     await expect(
       page.getByRole("radio", { name: /Phi 3.5 Mini/ }),
-    ).toBeChecked();
-    const list = await page.locator(".model-catalog").boundingBox();
-    const controls = await page.locator(".model-controls").boundingBox();
-    expect(controls!.y - (list!.y + list!.height)).toBeGreaterThanOrEqual(16);
-    await expect(
-      page.getByRole("button", { name: "Download model", exact: true }),
     ).toBeInViewport();
     await page.screenshot({ path: `/tmp/model-picker-${width}.png` });
     await page.keyboard.press("Escape");

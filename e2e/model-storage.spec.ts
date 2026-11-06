@@ -4,9 +4,6 @@ test("saved model detection survives reload and deleting a row removes only that
   page,
 }) => {
   await installBrowserModel(page);
-  await page.addInitScript(() =>
-    localStorage.setItem("local-writer-auto-load", "false"),
-  );
   await page.goto("/");
   const bases = ["0.5", "1.5"].map(
     (size) =>
@@ -23,23 +20,30 @@ test("saved model detection survives reload and deleting a row removes only that
     }
   }, bases);
   await page.reload();
+  await expect(
+    page.getByText("Loaded in memory", { exact: true }),
+  ).toBeAttached();
   await page.getByLabel("Models", { exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Load from device", exact: true }),
+    page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }),
   ).toBeEnabled();
   await expect(
     page.getByText("Downloaded on this device", { exact: true }),
-  ).toHaveCount(2);
+  ).toHaveCount(1);
   page.once("dialog", (dialog) => dialog.dismiss());
   await page.getByRole("button", { name: "Delete Qwen 2.5 0.5B" }).click();
   await expect(
-    page.getByRole("button", { name: "Load from device", exact: true }),
+    page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }),
   ).toBeEnabled();
   await page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }).check();
+  await expect(
+    page.getByText("Loaded in memory", { exact: true }),
+  ).toBeAttached();
+  await page.getByLabel("Models", { exact: true }).click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete Qwen 2.5 0.5B" }).click();
   await expect(
-    page.getByRole("button", { name: "Load from device", exact: true }),
+    page.getByRole("radio", { name: /Qwen 2.5 1.5B/ }),
   ).toBeEnabled();
   expect(
     await page.evaluate(async (bases) => {
@@ -52,8 +56,11 @@ test("saved model detection survives reload and deleting a row removes only that
     }, bases),
   ).toEqual([false, true]);
   await page.reload();
+  await expect(
+    page.getByText("Loaded in memory", { exact: true }),
+  ).toBeAttached();
   await page.getByLabel("Models", { exact: true }).click();
   await expect(
     page.getByText("Downloaded on this device", { exact: true }),
-  ).toHaveCount(1);
+  ).toHaveCount(0);
 });

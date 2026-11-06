@@ -8,9 +8,9 @@ test("chats save automatically, survive reopening, and can be deleted or tempora
   await installBrowserModel(page, 0, ["Saved reply."]);
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("button", { name: "Download model" }).click();
+  await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
   await page.getByLabel("Your text").fill("Remember this conversation");
   await page.getByLabel("Your text").press("Enter");
@@ -18,6 +18,11 @@ test("chats save automatically, survive reopening, and can be deleted or tempora
   const reopened = await context.newPage();
   await installBrowserModel(reopened);
   await reopened.goto("/");
+  await expect(reopened.locator(".message")).toHaveCount(0);
+  await expect(reopened.getByLabel("Your text")).toHaveValue("");
+  await reopened
+    .getByRole("button", { name: "Open chat: Remember this conversation" })
+    .click();
   await expect(reopened.locator(".user-text")).toHaveText(
     "Remember this conversation",
   );
@@ -33,11 +38,9 @@ test("chats save automatically, survive reopening, and can be deleted or tempora
   await reopened.getByRole("button", { name: "Make temporary" }).click();
   await reopened.keyboard.press("Escape");
   await reopened.getByLabel("Models", { exact: true }).click();
-  await reopened
-    .getByRole("button", { name: /Download model|Load from cache/ })
-    .click();
+  await reopened.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
   await expect(
-    reopened.getByRole("button", { name: "Model ready", includeHidden: true }),
+    reopened.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
   await reopened.getByLabel("Your text").fill("Do not keep this");
   await reopened.getByLabel("Your text").press("Enter");
@@ -53,9 +56,9 @@ test("refresh during generation restores the partial reply as stopped", async ({
   await installBrowserModel(page, 0, ["Partial answer", " continuation"], 3000);
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("button", { name: "Download model" }).click();
+  await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
   await page.getByLabel("Your text").fill("A long answer please");
   await page.getByLabel("Your text").press("Enter");
@@ -64,6 +67,10 @@ test("refresh during generation restores the partial reply as stopped", async ({
     { timeout: 15000 },
   );
   await page.reload();
+  await expect(page.locator(".message")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Open chat: A long answer please" })
+    .click();
   await expect(page.locator(".user-text")).toHaveText("A long answer please");
   await expect(page.locator(".assistant .markdown")).toHaveText(
     "Partial answer",

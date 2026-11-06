@@ -32,10 +32,10 @@ function setup(supported = true, cached = false) {
 }
 async function ready() {
   fireEvent.click(screen.getByLabelText("Models"));
-  const load = await screen.findByRole("button", { name: "Download model" });
+  const load = await screen.findByRole("radio", { name: /Qwen 2.5 0.5B/ });
   await waitFor(() => expect(load).toBeEnabled());
   fireEvent.click(load);
-  await screen.findByRole("button", { name: "Model ready" });
+  await screen.findByText("Loaded in memory");
 }
 async function send(text = "Hello") {
   fireEvent.change(screen.getByLabelText("Your text"), {
@@ -50,7 +50,7 @@ it("requires explicit loading and disables unsupported devices", async () => {
   const writer = setup(false);
   await screen.findByText(/WebGPU is unavailable/);
   fireEvent.click(screen.getByLabelText("Models"));
-  expect(screen.getByRole("button", { name: "Download model" })).toBeDisabled();
+  expect(screen.getByRole("radio", { name: /Qwen 2.5 0.5B/ })).toBeDisabled();
   expect(writer.load).not.toHaveBeenCalled();
 });
 it("defaults to chat and sends prior completed messages", async () => {
@@ -314,6 +314,9 @@ it("keeps legacy retry metadata without exposing writing preference fields", asy
   ];
   saveChat(chat);
   const writer = setup();
+  fireEvent.click(
+    screen.getByRole("button", { name: `Open chat: ${chat.title}` }),
+  );
   await ready();
   fireEvent.click(
     screen.getByRole("button", { name: "Open chat: Legacy draft" }),
@@ -400,17 +403,19 @@ it("shows reply progress until generation completes", async () => {
   );
 });
 
-it("respects disabling automatic model loading", async () => {
+it("auto-loads downloaded models even if an old preference disabled it", async () => {
   localStorage.setItem("local-writer-auto-load", "false");
   const writer = setup(true, true);
   fireEvent.click(screen.getByLabelText("Models"));
-  await screen.findByRole("button", { name: "Load from device" });
-  expect(writer.load).not.toHaveBeenCalled();
+  await waitFor(() => expect(writer.load).toHaveBeenCalledOnce());
+  expect(
+    screen.queryByLabelText("Auto-load downloaded model"),
+  ).not.toBeInTheDocument();
 });
 it("does not auto-download missing models", async () => {
   const writer = setup(true, false);
   fireEvent.click(screen.getByLabelText("Models"));
-  await screen.findByRole("button", { name: "Download model" });
+  await screen.findByRole("radio", { name: /Qwen 2.5 0.5B/ });
   expect(writer.load).not.toHaveBeenCalled();
 });
 
@@ -502,4 +507,72 @@ it("does not apply a late title after stopping", async () => {
     screen.queryByRole("button", { name: "Open chat: Late title" }),
   ).not.toBeInTheDocument();
   expect(screen.getByText("We might ship Friday.")).toBeInTheDocument();
+});
+it("selecting a model loads it, retries failures, and switches without load controls", async () => {
+  const writer = setup();
+  vi.mocked(writer.load).mockRejectedValueOnce(new Error("offline"));
+  fireEvent.click(screen.getByLabelText("Models"));
+  const radio = screen.getByRole("radio", { name: /Qwen 2.5 0.5B/ });
+  await waitFor(() => expect(radio).toBeEnabled());
+  fireEvent.click(radio);
+  await screen.findByText("Could not load the model: offline");
+  fireEvent.click(radio);
+  await screen.findByText("Loaded in memory");
+  expect(writer.load).toHaveBeenCalledTimes(2);
+  fireEvent.click(radio);
+  expect(writer.load).toHaveBeenCalledTimes(2);
+  fireEvent.click(screen.getByRole("radio", { name: /Qwen 2.5 1.5B/ }));
+  await waitFor(() => expect(writer.load).toHaveBeenCalledTimes(3));
+  expect(vi.mocked(writer.load).mock.calls[2][0]).toContain("1.5B");
+  expect(
+    screen.queryByRole("button", {
+      name: /Unload|Download model|Load from device/,
+    }),
+  ).not.toBeInTheDocument();
+});
+it("opens a fresh chat without overwriting or duplicating saved conversations", () => {
+  const previous = {
+    ...newConversation(),
+    title: "Saved conversation",
+    messages: [
+      { id: "u", role: "user" as const, content: "Keep this history" },
+    ],
+  };
+  saveChat(previous);
+  const before = localStorage.getItem(`local-writer-chat-v1:${previous.id}`);
+  for (let i = 0; i < 2; i++) {
+    setup();
+    expect(
+      screen.getByRole("button", { name: "Open chat: New chat" }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(document.querySelectorAll(".message")).toHaveLength(0);
+    expect(screen.getByLabelText("Your text")).toHaveValue("");
+    expect(localStorage.getItem(`local-writer-chat-v1:${previous.id}`)).toBe(
+      before,
+    );
+    expect(
+      Object.keys(localStorage).filter((key) =>
+        key.startsWith("local-writer-chat-v1:"),
+      ),
+    ).toHaveLength(1);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open chat: Saved conversation" }),
+    );
+    expect(screen.getByText("Keep this history")).toBeInTheDocument();
+    cleanup();
+  }
+});
+it("keeps a manually named empty chat when its first message is sent", async () => {
+  setup();
+  fireEvent.click(screen.getByRole("button", { name: "Options for New chat" }));
+  fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+  fireEvent.change(screen.getByLabelText("Chat title"), {
+    target: { value: "My project" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Save title" }));
+  await ready();
+  await send("A different first message");
+  expect(
+    screen.getByRole("button", { name: "Open chat: My project" }),
+  ).toBeInTheDocument();
 });

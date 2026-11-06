@@ -43,7 +43,35 @@ export async function searchWeb(
     );
   if (!response.headers.get("content-type")?.includes("application/json"))
     throw new Error("Web search is not configured on this server.");
-  const data = await response.json();
+  // Bound decoded bytes even when Content-Length is missing or incorrect.
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("Search returned an empty response.");
+  const decoder = new TextDecoder();
+  let size = 0;
+  let json = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 256_000) {
+        await reader.cancel();
+        throw new Error(
+          "Search response is too large. Try a more specific question.",
+        );
+      }
+      json += decoder.decode(value, { stream: true });
+    }
+    json += decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
+  let data;
+  try {
+    data = JSON.parse(json);
+  } catch {
+    throw new Error("Search returned invalid JSON.");
+  }
   if (!data || !Array.isArray(data.results))
     throw new Error("Search returned an invalid response.");
   const sources: WebSource[] = [];

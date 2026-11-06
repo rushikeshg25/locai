@@ -38,7 +38,11 @@ import {
   readAttachments,
 } from "./storage";
 import { getPreference, setPreference, preferredModel } from "./preferences";
-import { prepareMessages, missingTerms } from "./prompts";
+import {
+  prepareMessages,
+  missingTerms,
+  conversationBudgetUsage,
+} from "./prompts";
 export default function App({
   writer: supplied,
   gpuCheck = checkGPU,
@@ -54,9 +58,6 @@ export default function App({
   useDismissibleDetails(chatMenu);
   const [browserWriter] = useState(() => supplied ?? new LocalWriter());
   const writer = browserWriter;
-  const [autoLoad, setAutoLoad] = useState(
-    () => getPreference("auto-load", "true") === "true",
-  );
   const autoAttempted = useRef(false);
   const session = useWriter(writer);
   const [webSearch, setWebSearch] = useState(false);
@@ -75,9 +76,10 @@ export default function App({
   const [supported, setSupported] = useState<boolean | null>(null);
   const [model, setModel] = useState<string>(preferredModel);
   const [saved] = useState(readSaved);
-  const [chats, setChats] = useState<Conversation[]>(() =>
-    saved.chats.length ? saved.chats : [newConversation()],
-  );
+  const [chats, setChats] = useState<Conversation[]>(() => [
+    newConversation(),
+    ...saved.chats,
+  ]);
   const [active, setActive] = useState("");
   const chat = chats.find((item) => item.id === active) ?? chats[0];
   const [text, setText] = useState("");
@@ -175,7 +177,7 @@ export default function App({
     ["loading", "writing", "stopping", "removing"].includes(session.status);
   const selected = models.find((item) => item.id === model)!;
   useEffect(() => {
-    if (autoAttempted.current || supported !== true || !autoLoad) return;
+    if (autoAttempted.current || supported !== true) return;
     let alive = true;
     browserWriter.cached(model).then(
       (cached) => {
@@ -191,7 +193,7 @@ export default function App({
     return () => {
       alive = false;
     };
-  }, [supported, autoLoad, model, browserWriter]);
+  }, [supported, model, browserWriter]);
   useEffect(() => {
     let alive = true;
     gpuCheck().then(
@@ -387,7 +389,10 @@ export default function App({
     } else
       update(id, (item) => ({
         ...item,
-        title: item.messages.length ? item.title : source.slice(0, 44),
+        title:
+          item.messages.length || item.title !== "New chat"
+            ? item.title
+            : source.slice(0, 44),
         messages: [...prefix, user, answer],
       }));
     setText("");
@@ -432,7 +437,7 @@ export default function App({
     const result = await session.run(
       request,
       (content) => patch(id, answer.id, parse(content)),
-      !fork && chat.messages.length === 0
+      !fork && chat.messages.length === 0 && chat.title === "New chat"
         ? {
             firstMessage: source,
             onTitle: (title) => update(id, (item) => ({ ...item, title })),
@@ -446,9 +451,9 @@ export default function App({
     });
   }
   let contextUsage = 0;
-  if (text.trim() || chat.messages.length) {
+  if (text.trim() || chat.messages.length || attachments.length) {
     try {
-      const budget = prepareMessages({
+      contextUsage = conversationBudgetUsage({
         reasoning: reasoningEnabled && supportsReasoning(selected.id),
         text: messageText({ content: text, attachments }),
         mode: "chat",
@@ -458,7 +463,6 @@ export default function App({
         history: conversationHistory(resend ?? chat.messages),
         contextWindow: 4096,
       });
-      contextUsage = budget.used / budget.budget;
     } catch {
       // Sending still reports the full budget error; show a full ring meanwhile.
       contextUsage = 1;
@@ -1042,7 +1046,6 @@ export default function App({
                   contextUsage={contextUsage}
                   required={modelRequired}
                   supported={supported}
-                  autoLoad={autoLoad}
                   reasoning={reasoningEnabled}
                   reasoningAllowed={true}
                   onReasoning={(value) => {
@@ -1050,22 +1053,15 @@ export default function App({
                     if (!setPreference("reasoning", String(value)))
                       setFeedback("Reasoning preference could not be saved.");
                   }}
-                  onAutoLoad={(value) => {
-                    setAutoLoad(value);
-                    if (!setPreference("auto-load", String(value)))
-                      setFeedback(
-                        "Could not save the automatic loading preference.",
-                      );
-                  }}
                   onSelect={(id) => {
+                    if (id === model && session.status === "ready") return;
                     session.stop("");
                     setModel(id);
+                    void session.load(id);
                     if (!setPreference("model", id))
                       setFeedback("Could not remember this model selection.");
                   }}
-                  onLoad={() => void session.load(model)}
                   onRemove={(id) => void session.remove(id)}
-                  onUnload={() => session.stop("")}
                 />
                 {busy ? (
                   <Button
@@ -1133,6 +1129,12 @@ export default function App({
             sends the current question to search engines through the search
             service. No account is required. Review AI answers before using
             them.
+          </p>
+          <p>
+            Downloaded models load automatically when you open Locai. Weights
+            stay in browser storage; each visit prepares them in GPU memory.
+            Missing runtime files may need internet. Clearing site data or
+            browser storage eviction removes downloads.
           </p>
           <form method="dialog">
             <Button>

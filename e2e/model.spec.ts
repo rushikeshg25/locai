@@ -9,12 +9,12 @@ test("real model generates locally and reloads offline", async ({
   );
   test.setTimeout(600_000);
   await page.goto("/");
-  const load = page.getByRole("button", { name: "Download model" });
+  const load = page.getByRole("radio", { name: /Qwen 2.5 0.5B/ });
   await page.getByLabel("Models", { exact: true }).click();
   await expect(load).toBeEnabled({ timeout: 15_000 });
   await load.click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached({
     timeout: 480_000,
   });
@@ -40,7 +40,7 @@ test("real model generates locally and reloads offline", async ({
   await context.setOffline(true);
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached({
     timeout: 120_000,
   });

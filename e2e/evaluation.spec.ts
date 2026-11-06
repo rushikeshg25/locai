@@ -27,11 +27,10 @@ test("collect real browser-model outputs for human quality review", async ({
   const results: unknown[] = [];
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("radio", { name: new RegExp(size) }).check();
+  await page.getByRole("radio", { name: new RegExp(size) }).click();
   const started = Date.now();
-  await page.getByRole("button", { name: "Download model" }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached({ timeout: 600000 });
   const loadMs = Date.now() - started;
   try {

@@ -14,11 +14,7 @@ export function ModelPicker({
   required = false,
   supported,
   onSelect,
-  onLoad,
   onRemove,
-  onUnload,
-  autoLoad,
-  onAutoLoad,
   reasoning,
   reasoningAllowed,
   onReasoning,
@@ -26,8 +22,6 @@ export function ModelPicker({
   reasoning: boolean;
   reasoningAllowed: boolean;
   onReasoning: (value: boolean) => void;
-  autoLoad: boolean;
-  onAutoLoad: (value: boolean) => void;
   writer: Writer;
   model: string;
   status: string;
@@ -35,10 +29,8 @@ export function ModelPicker({
   required?: boolean;
   supported: boolean | null;
   onSelect: (id: string) => void;
-  onLoad: () => void;
   onRemove: (id: string) => void;
   contextUsage: number;
-  onUnload: () => void;
 }) {
   const picker = useRef<HTMLDetailsElement>(null);
   const [cache, setCache] = useState<Record<string, boolean | null>>({});
@@ -80,7 +72,7 @@ export function ModelPicker({
       >
         <LoadingStatus
           progress={{ value: contextUsage, message: "" }}
-          label="Estimated context usage"
+          label="Conversation budget estimate"
           indeterminate={false}
         />
         <span className="model-name">
@@ -126,8 +118,9 @@ export function ModelPicker({
                   type="radio"
                   name="model"
                   checked={item.id === model}
-                  disabled={busy}
-                  onChange={() => onSelect(item.id)}
+                  disabled={busy || supported !== true}
+                  onChange={() => {}}
+                  onClick={() => onSelect(item.id)}
                 />
                 <span>
                   <strong>{item.label}</strong>
@@ -175,33 +168,6 @@ export function ModelPicker({
             Cannot check saved files. Browser storage may be unavailable.
           </p>
         )}
-        <div className="model-controls">
-          <Button
-            disabled={
-              !supported ||
-              busy ||
-              status === "ready" ||
-              cache[model] === undefined
-            }
-            onClick={onLoad}
-          >
-            <Icon name="download" />
-            {status === "ready"
-              ? "Model ready"
-              : cache[model] === undefined
-                ? "Checking downloads…"
-                : cache[model] === true
-                  ? "Load from device"
-                  : "Download model"}
-          </Button>
-          <Button
-            className="secondary"
-            disabled={busy || status !== "ready"}
-            onClick={onUnload}
-          >
-            Unload
-          </Button>
-        </div>
         {supportsReasoning(model) && (
           <label className="reasoning-setting">
             <input
@@ -214,76 +180,7 @@ export function ModelPicker({
             <small>Chat only · may take longer</small>
           </label>
         )}
-        <label>
-          <input
-            type="checkbox"
-            checked={autoLoad}
-            disabled={busy}
-            onChange={(event) => onAutoLoad(event.target.checked)}
-          />
-          <span>Auto-load downloaded model</span>
-        </label>
-        <details className="model-storage-details">
-          <summary>Storage &amp; details</summary>
-          <p className="muted">
-            Saved weights load into GPU memory each time you open the app.
-            Missing runtime files may need internet. Clearing site data or
-            browser eviction removes downloads.
-          </p>
-          <StorageInfo refresh={status} />
-        </details>
       </section>
     </details>
-  );
-}
-
-function StorageInfo({ refresh }: { refresh: string }) {
-  const [info, setInfo] = useState(""),
-    [retention, setRetention] = useState("");
-  useEffect(() => {
-    let alive = true;
-    navigator.storage?.estimate().then(
-      (value) => {
-        if (alive)
-          setInfo(
-            `${Math.round((value.usage ?? 0) / 1e6)} MB used of about ${Math.round((value.quota ?? 0) / 1e6)} MB available to this site.`,
-          );
-      },
-      () => {
-        if (alive) setInfo("Storage estimate unavailable.");
-      },
-    );
-    return () => {
-      alive = false;
-    };
-  }, [refresh]);
-  return (
-    <>
-      <p className="muted">
-        {info || "Browser storage estimates unavailable."}
-      </p>
-      <Button
-        className="secondary"
-        onClick={async () => {
-          try {
-            const kept = await navigator.storage?.persist();
-            setRetention(
-              kept
-                ? "Persistent storage granted. You can still delete data manually."
-                : "Persistent storage was not granted. The browser may evict cached files.",
-            );
-          } catch {
-            setRetention("Persistent storage is unavailable.");
-          }
-        }}
-      >
-        Keep downloads on device
-      </Button>
-      {retention && (
-        <p role="status" className="muted">
-          {retention}
-        </p>
-      )}
-    </>
   );
 }

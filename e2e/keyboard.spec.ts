@@ -6,9 +6,9 @@ test("keyboard shortcuts insert newlines at the caret and send only on Enter", a
   await installBrowserModel(page);
   await page.goto("/");
   await page.getByLabel("Models", { exact: true }).click();
-  await page.getByRole("button", { name: "Download model" }).click();
+  await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
   await expect(
-    page.getByRole("button", { name: "Model ready", includeHidden: true }),
+    page.getByText("Loaded in memory", { exact: true }),
   ).toBeAttached();
   const input = page.getByLabel("Your text");
   await expect(input).toHaveAccessibleDescription(/Enter to send/);
