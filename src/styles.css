@@ -774,23 +774,9 @@ del {
   margin: 0;
 }
 
-.writing-preferences {
-  margin: 8px 0;
-  font-size: 12px;
-  color: var(--muted);
-}
 .writing-preferences label {
   display: block;
   margin-top: 8px;
-}
-.writing-preferences input {
-  display: block;
-  width: 100%;
-  margin-top: 4px;
-  padding: 8px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 7px;
 }
 
 .starter-prompts {
@@ -1287,9 +1273,6 @@ del {
   border-radius: 14px;
   box-shadow: var(--panel-shadow);
 }
-.writing-tools-panel .writing-preferences {
-  margin-bottom: 0;
-}
 
 /* Shared structure for compact, dismissible panels. */
 .panel-heading {
@@ -1326,11 +1309,6 @@ del {
 .writing-tools-panel .actions select {
   grid-column: 1 / -1;
   min-height: 40px;
-}
-.writing-tools-panel .writing-preferences {
-  border-top: 1px solid var(--line);
-  padding-top: 12px;
-  margin-top: 16px;
 }
 .writing-preferences > summary {
   padding: 4px 0;
@@ -1445,7 +1423,6 @@ input[type="radio"] {
     min-height: 44px;
   }
   .composer textarea,
-  .writing-preferences input,
   .chat-search-field #chat-search {
     font-size: 16px;
   }
@@ -1462,7 +1439,6 @@ input[type="radio"] {
   .writing-tools-panel {
     padding: 12px;
   }
-  .writing-preferences > summary,
   .model-settings .model-storage-details > summary {
     min-height: 44px;
     align-content: center;

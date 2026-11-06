@@ -91,8 +91,6 @@ export default function App({
   const [active, setActive] = useState("");
   const chat = chats.find((item) => item.id === active) ?? chats[0];
   const [text, setText] = useState("");
-  const [terms, setTerms] = useState("");
-  const [instruction, setInstruction] = useState("");
   const [action, setAction] = useState<Action>("grammar");
   const [feedback, setFeedback] = useState(saved.warning);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -274,8 +272,8 @@ export default function App({
     attached = attachments,
     requestMode = chat.mode,
     requestAction = action,
-    requestTerms = terms,
-    requestInstruction = instruction,
+    requestTerms = "",
+    requestInstruction = "",
     useSearch = webSearch && requestMode === "chat",
     useReasoning = reasoningEnabled,
   ) {
@@ -419,8 +417,8 @@ export default function App({
         text: messageText({ content: text, attachments }),
         mode: chat.mode,
         action,
-        terms,
-        instruction,
+        terms: "",
+        instruction: "",
         history: conversationHistory(resend ?? chat.messages),
         contextWindow: 4096,
       });
@@ -789,8 +787,6 @@ export default function App({
                           mode: message.mode ?? "chat",
                         }));
                         setAction(message.action ?? "grammar");
-                        setTerms(message.terms ?? "");
-                        setInstruction(message.instruction ?? "");
                         setResend(chat.messages.slice(0, index));
                         composer.current?.focus();
                       }}
@@ -1008,32 +1004,6 @@ export default function App({
                       ))}
                     </select>
                   </div>
-                  <details className="writing-preferences">
-                    <summary>Writing preferences · optional</summary>
-                    <label>
-                      Protected terms
-                      <input
-                        value={terms}
-                        maxLength={300}
-                        disabled={busy}
-                        onChange={(event) => setTerms(event.target.value)}
-                        placeholder="PostgreSQL, Acme, API"
-                      />
-                    </label>
-                    <small>
-                      Comma-separated. Missing terms are flagged for review.
-                    </small>
-                    <label>
-                      Custom instruction
-                      <input
-                        value={instruction}
-                        maxLength={300}
-                        disabled={busy}
-                        onChange={(event) => setInstruction(event.target.value)}
-                        placeholder="Be polite but direct."
-                      />
-                    </label>
-                  </details>
                 </div>
               </details>
             )}

@@ -243,10 +243,9 @@ test("Chat and Write keep the composer fixed while writing tools overlay", async
     await page.getByRole("button", { name: "Write", exact: true }).click();
     expect(await input.boundingBox()).toEqual(before);
     await page.getByLabel("Writing tools", { exact: true }).click();
-    await page
-      .getByText("Writing preferences · optional", { exact: true })
-      .click();
-    await expect(page.getByLabel("Protected terms")).toBeInViewport();
+    await expect(
+      page.getByRole("button", { name: "Fix grammar", exact: true }),
+    ).toBeInViewport();
     expect(await input.boundingBox()).toEqual(before);
     await page.keyboard.press("Escape");
     await expect(
