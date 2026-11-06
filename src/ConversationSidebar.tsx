@@ -65,7 +65,7 @@ export function ConversationSidebar({
             if (mobile) onOpen?.(false);
           }}
         >
-          <Icon name="plus" />
+          <Icon name="edit" />
           New chat
         </Button>
       )}
@@ -77,11 +77,12 @@ export function ConversationSidebar({
         <input
           id="chat-search"
           type="search"
-          placeholder="Search conversations"
+          placeholder="Search chats"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
       </div>
+      <p className="sidebar-section-label">Recent chats</p>
       <nav aria-label="Conversations">
         {filtered.map((chat) => (
           <Button
