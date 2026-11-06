@@ -189,8 +189,10 @@ header {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line) transparent;
+  scrollbar-width: none;
+}
+.transcript::-webkit-scrollbar {
+  display: none;
 }
 .conversation {
   max-width: 800px;

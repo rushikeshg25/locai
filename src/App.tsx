@@ -596,6 +596,8 @@ export default function App({
         )}
         <div
           className="transcript"
+          tabIndex={0}
+          aria-label="Chat messages"
           ref={scroll}
           onMouseUp={() => {
             const selected = window.getSelection();
