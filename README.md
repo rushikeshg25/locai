@@ -61,7 +61,7 @@ The service worker and offline app cache are enabled in production builds, not t
 2. Select a model to load it immediately. The first download needs internet.
 3. Wait for the model to be ready, then send a message.
 
-Downloaded models load automatically on startup by default. You can disable **Auto-load downloaded model** in the selector. Sending before a model is ready opens the selector and preserves your draft.
+The selected downloaded model loads automatically on startup. Sending before a model is ready opens the selector and preserves your draft.
 
 **Downloading and loading are different.** Downloading saves weights in browser storage. Loading prepares those weights in GPU memory. Refreshing the page unloads the running model, so it must load again—even when no weights need downloading. Missing runtime or tokenizer files can still require internet.
 
@@ -145,7 +145,7 @@ The model dropdown keeps progress and actions separate from the composer:
 - Selecting a model loads it immediately, reusing downloaded weights and downloading missing files. Selecting it again retries a failed or stopped load.
 - Switching models releases the previous worker.
 - The bin button beside a downloaded model asks for confirmation, then removes the selected model's cached files. It does not delete chats.
-- **Storage & details** shows storage estimates and offers **Keep downloads on device**, which requests persistent storage. The browser decides whether to grant it.
+- **About Locai** explains browser storage and model loading.
 
 Switching models unloads the current worker. Initial downloads remain explicit; automatic startup loading only begins when the selected weights are detected in cache.
 
@@ -153,13 +153,13 @@ Switching models unloads the current worker. Initial downloads remain explicit; 
 
 Model inference processes messages and attachments in this browser. Optional web search sends the current question to search engines through SearXNG; it does not send attachment contents or chat history. Model downloads contact Hugging Face and the runtime host. There are no accounts or analytics, and no inference backend receives your messages. Generated HTML is disabled, and model-generated remote images are not fetched.
 
-| Data                                        | Where it lives        | How long it stays                                  |
-| ------------------------------------------- | --------------------- | -------------------------------------------------- |
-| Temporary chats and unsent drafts           | Current tab memory    | Lost on reload or when the tab closes              |
-| Saved conversations and attachments         | Browser local storage | Until deleted or browser data is cleared           |
-| Model files                                 | Browser cache         | Until deleted, evicted, or browser data is cleared |
-| Theme, selected model, auto-load preference | Browser local storage | Until changed or browser data is cleared           |
-| App files                                   | Service-worker cache  | Updated as new app versions activate               |
+| Data                                | Where it lives        | How long it stays                                  |
+| ----------------------------------- | --------------------- | -------------------------------------------------- |
+| Temporary chats and unsent drafts   | Current tab memory    | Lost on reload or when the tab closes              |
+| Saved conversations and attachments | Browser local storage | Until deleted or browser data is cleared           |
+| Model files                         | Browser cache         | Until deleted, evicted, or browser data is cleared |
+| Theme, selected model               | Browser local storage | Until changed or browser data is cleared           |
+| App files                           | Service-worker cache  | Updated as new app versions activate               |
 
 Chats save automatically in browser storage after the first message, including later replies and attachments. Reopening the app restores your recent conversations. Use the header's **Chat options** menu to **Export** as Markdown or **Delete** a conversation. **Make temporary** removes the saved copy while keeping the current tab's copy. Saved data is not encrypted by the app.
 

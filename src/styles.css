@@ -1124,23 +1124,6 @@ del {
   outline-offset: -1px;
 }
 
-.model-storage-details {
-  margin-top: 12px;
-  border-top: 1px solid var(--line);
-  padding-top: 8px;
-}
-.model-settings .model-storage-details > summary {
-  display: list-item;
-  font-size: 12px;
-  color: var(--muted);
-  padding: 4px 0;
-  list-style: revert;
-  max-width: none;
-}
-.model-settings .model-storage-details > summary::-webkit-details-marker {
-  display: inline;
-}
-
 .chat-rail {
   width: 56px;
   flex-shrink: 0;
@@ -1336,10 +1319,6 @@ input[type="radio"] {
     display: none;
   }
 
-  .model-settings .model-storage-details > summary {
-    min-height: 44px;
-    align-content: center;
-  }
   .model-panel label:not(.model-option):not(.model-choice) {
     min-height: 44px;
     align-content: center;

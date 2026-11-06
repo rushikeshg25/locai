@@ -58,9 +58,6 @@ export default function App({
   useDismissibleDetails(chatMenu);
   const [browserWriter] = useState(() => supplied ?? new LocalWriter());
   const writer = browserWriter;
-  const [autoLoad, setAutoLoad] = useState(
-    () => getPreference("auto-load", "true") === "true",
-  );
   const autoAttempted = useRef(false);
   const session = useWriter(writer);
   const [webSearch, setWebSearch] = useState(false);
@@ -180,7 +177,7 @@ export default function App({
     ["loading", "writing", "stopping", "removing"].includes(session.status);
   const selected = models.find((item) => item.id === model)!;
   useEffect(() => {
-    if (autoAttempted.current || supported !== true || !autoLoad) return;
+    if (autoAttempted.current || supported !== true) return;
     let alive = true;
     browserWriter.cached(model).then(
       (cached) => {
@@ -196,7 +193,7 @@ export default function App({
     return () => {
       alive = false;
     };
-  }, [supported, autoLoad, model, browserWriter]);
+  }, [supported, model, browserWriter]);
   useEffect(() => {
     let alive = true;
     gpuCheck().then(
@@ -1049,20 +1046,12 @@ export default function App({
                   contextUsage={contextUsage}
                   required={modelRequired}
                   supported={supported}
-                  autoLoad={autoLoad}
                   reasoning={reasoningEnabled}
                   reasoningAllowed={true}
                   onReasoning={(value) => {
                     setReasoningEnabled(value);
                     if (!setPreference("reasoning", String(value)))
                       setFeedback("Reasoning preference could not be saved.");
-                  }}
-                  onAutoLoad={(value) => {
-                    setAutoLoad(value);
-                    if (!setPreference("auto-load", String(value)))
-                      setFeedback(
-                        "Could not save the automatic loading preference.",
-                      );
                   }}
                   onSelect={(id) => {
                     if (id === model && session.status === "ready") return;
@@ -1140,6 +1129,12 @@ export default function App({
             sends the current question to search engines through the search
             service. No account is required. Review AI answers before using
             them.
+          </p>
+          <p>
+            Downloaded models load automatically when you open Locai. Weights
+            stay in browser storage; each visit prepares them in GPU memory.
+            Missing runtime files may need internet. Clearing site data or
+            browser storage eviction removes downloads.
           </p>
           <form method="dialog">
             <Button>

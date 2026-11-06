@@ -403,12 +403,14 @@ it("shows reply progress until generation completes", async () => {
   );
 });
 
-it("respects disabling automatic model loading", async () => {
+it("auto-loads downloaded models even if an old preference disabled it", async () => {
   localStorage.setItem("local-writer-auto-load", "false");
   const writer = setup(true, true);
   fireEvent.click(screen.getByLabelText("Models"));
-  await screen.findAllByText("Downloaded on this device");
-  expect(writer.load).not.toHaveBeenCalled();
+  await waitFor(() => expect(writer.load).toHaveBeenCalledOnce());
+  expect(
+    screen.queryByLabelText("Auto-load downloaded model"),
+  ).not.toBeInTheDocument();
 });
 it("does not auto-download missing models", async () => {
   const writer = setup(true, false);
@@ -563,7 +565,7 @@ it("opens a fresh chat without overwriting or duplicating saved conversations", 
 it("keeps a manually named empty chat when its first message is sent", async () => {
   setup();
   fireEvent.click(screen.getByRole("button", { name: "Options for New chat" }));
-  fireEvent.click(screen.getByRole("button", { name: "Rename", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Rename" }));
   fireEvent.change(screen.getByLabelText("Chat title"), {
     target: { value: "My project" },
   });
