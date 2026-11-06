@@ -4,14 +4,14 @@ AI chat that runs in your browser, on your device.
 
 Ask questions, explore ideas, and improve your writing with local language models. No account, API key, or inference server required.
 
-Locai uses **WebGPU** through **WebLLM** to run models locally. Inference runs locally; live web search is not included.
+Locai uses **WebGPU** through **WebLLM** to run models locally. It does not browse the web or search for live information.
 
 ## Features
 
 - **One chat interface** for questions, writing, brainstorming, and explanations.
 - **Local inference** with downloadable models.
 - **Automatic model loading** when the selected model is already downloaded.
-- **Saved conversations** with generated titles, search, rename, pin, and delete.
+- **Saved conversations** with generated titles, conversation search, rename, pin, and delete.
 - **A fresh chat on startup**, with previous conversations available in the sidebar.
 - **Reasoning support** for Qwen 3, with thinking separated from the final answer.
 - **Text and Markdown attachments** for reference material.
@@ -152,7 +152,7 @@ It uses a **conservative byte-based budget**, not measured token usage or GPU me
 
 Qwen 2.5 0.5B is the default. These estimates exclude some runtime and browser overhead and do not guarantee device compatibility.
 
-Model definitions are maintained in [`src/models.ts`](src/models.ts).
+Model definitions are maintained in [`src/features/models/models.ts`](src/features/models/models.ts).
 
 ### Reasoning
 
@@ -164,7 +164,15 @@ Reasoning uses more of the available context and can take longer. A model may re
 
 ## Web access
 
-Live web search is not available. Paste reference text or attach text/Markdown files to give the model external context. Source links in older saved conversations remain accessible.
+Locai does not fetch web pages or search results. Pasting a URL does not let the model read that page, and answers are not checked against live information.
+
+To use outside information, paste the relevant text or attach a text/Markdown file, then ask a question about it. For example:
+
+> Using the notes below, summarize the main points and identify anything uncertain.
+
+Older saved conversations keep their source links and exports. Retrying an old search response now runs local inference without repeating the search.
+
+The Docker setup serves only the app; it no longer starts SearXNG or exposes a search proxy.
 
 ## Privacy and storage
 
@@ -247,20 +255,20 @@ See [`docs/evaluation.md`](docs/evaluation.md) for model-output evaluation.
 
 ### Project structure
 
-| Area                      | Files                                                             |
-| ------------------------- | ----------------------------------------------------------------- |
-| Chat workspace            | `src/App.tsx`, `src/ConversationSidebar.tsx`                      |
-| Model selection           | `src/ModelPicker.tsx`, `src/models.ts`                            |
-| Inference and lifecycle   | `src/inference.ts`, `src/inference.worker.ts`, `src/useWriter.ts` |
-| Persona and context       | `src/persona.ts`, `src/prompts.ts`                                |
-| Conversations and storage | `src/conversations.ts`, `src/storage.ts`                          |
-| Mobile notice             | `src/MobileNotice.tsx`                                            |
-| Offline app caching       | `src/offline.ts`, `vite.config.ts`                                |
-| Tests                     | `src/*.test.*`, `e2e/`                                            |
+| Area                      | Files                                                                                                             |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Chat workspace            | `src/app/App.tsx`, `src/features/chat/ConversationSidebar.tsx`                                                    |
+| Model selection           | `src/features/models/ModelPicker.tsx`, `src/features/models/models.ts`                                            |
+| Inference and lifecycle   | `src/features/models/inference.ts`, `src/features/models/inference.worker.ts`, `src/features/models/useWriter.ts` |
+| Persona and context       | `src/features/prompts/persona.ts`, `src/features/prompts/prompts.ts`                                              |
+| Conversations and storage | `src/features/chat/conversations.ts`, `src/features/chat/storage.ts`                                              |
+| Mobile notice             | `src/platform/MobileNotice.tsx`                                                                                   |
+| Offline app caching       | `src/platform/offline.ts`, `vite.config.ts`                                                                       |
+| Tests                     | `src/**/*.test.*`, `e2e/`                                                                                         |
 
 ## Limitations
 
-Locai does not currently support mobile model execution, voice input, account sync, executable artifacts, or full-page browsing.
+Locai does not currently support mobile model execution, voice input, account sync, executable artifacts, live web search, or full-page browsing.
 
 Local models can make mistakes. Review important facts, names, numbers, and generated code before using them.
 
