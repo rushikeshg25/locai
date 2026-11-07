@@ -167,9 +167,7 @@ export default function App({
   const nearBottom = useRef(true);
   const [latest, setLatest] = useState(false);
   const info = useRef<HTMLDialogElement>(null);
-  const busy = ["loading", "writing", "stopping", "removing"].includes(
-    session.status,
-  );
+  const busy = ["writing", "stopping", "removing"].includes(session.status);
   const selected = models.find((item) => item.id === model)!;
   useEffect(() => {
     if (autoAttempted.current || supported !== true) return;
@@ -1010,7 +1008,9 @@ export default function App({
                         ? "Send message"
                         : "Open Models to load a model"
                     }
-                    disabled={!!inputError(text)}
+                    disabled={
+                      session.status === "loading" || !!inputError(text)
+                    }
                     onClick={() => void send()}
                   >
                     <Icon name="send" />
