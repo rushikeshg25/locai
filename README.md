@@ -109,7 +109,7 @@ Type your request directly:
 
 > Summarize the attached notes into five action items.
 
-There is no separate writing mode. Locai’s system prompt provides a concise assistant persona and guidance for preserving meaning when editing text.
+There is no separate writing mode. Chat sends your messages and conversation history without an application persona or system prompt.
 
 ### Manage conversations
 
@@ -258,7 +258,7 @@ See [`docs/evaluation.md`](docs/evaluation.md) for model-output evaluation.
 | Chat workspace            | `src/app/App.tsx`, `src/features/chat/ConversationSidebar.tsx`                                                    |
 | Model selection           | `src/features/models/ModelPicker.tsx`, `src/features/models/models.ts`                                            |
 | Inference and lifecycle   | `src/features/models/inference.ts`, `src/features/models/inference.worker.ts`, `src/features/models/useWriter.ts` |
-| Persona and context       | `src/features/prompts/persona.ts`, `src/features/prompts/prompts.ts`                                              |
+| Persona and context       | `src/features/prompts/prompts.ts`                                                                                 |
 | Conversations and storage | `src/features/chat/conversations.ts`, `src/features/chat/storage.ts`                                              |
 | Mobile notice             | `src/platform/MobileNotice.tsx`                                                                                   |
 | Offline app caching       | `src/platform/offline.ts`, `vite.config.ts`                                                                       |
