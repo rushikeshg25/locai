@@ -64,3 +64,25 @@ test("saved model detection survives reload and deleting a row removes only that
     page.getByText("Downloaded on this device", { exact: true }),
   ).toHaveCount(0);
 });
+
+test("a loading model can be cancelled without moving the composer or losing its draft", async ({
+  page,
+}) => {
+  await installBrowserModel(page, 60_000);
+  await page.goto("/");
+  const input = page.getByLabel("Your text");
+  await input.fill("Keep this draft");
+  const before = await input.boundingBox();
+  await page.getByLabel("Models", { exact: true }).click();
+  await page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }).click();
+  const cancel = page.getByRole("button", { name: "Cancel model loading" });
+  await expect(cancel).toBeVisible();
+  await cancel.focus();
+  await page.keyboard.press("Enter");
+  await expect(cancel).toHaveCount(0);
+  await expect(input).toHaveValue("Keep this draft");
+  await expect(
+    page.getByRole("radio", { name: /Qwen 2.5 0.5B/ }),
+  ).toBeEnabled();
+  expect(await input.boundingBox()).toEqual(before);
+});

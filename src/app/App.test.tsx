@@ -589,6 +589,23 @@ it("keeps drafting and new chats available while a model loads", async () => {
   expect(screen.getAllByRole("button", { name: "New chat" })[0]).toBeEnabled();
 });
 
+it("cancels a pending model load from its row without losing the draft", async () => {
+  const writer = setup();
+  vi.mocked(writer.load).mockImplementation(() => new Promise(() => {}));
+  fireEvent.change(screen.getByLabelText("Your text"), {
+    target: { value: "Keep my draft" },
+  });
+  fireEvent.click(screen.getByLabelText("Models"));
+  const model = await screen.findByRole("radio", { name: /Qwen 2.5 0.5B/ });
+  await waitFor(() => expect(model).toBeEnabled());
+  fireEvent.click(model);
+  fireEvent.click(screen.getByRole("button", { name: "Cancel model loading" }));
+  expect(writer.dispose).toHaveBeenCalled();
+  expect(screen.getByLabelText("Your text")).toHaveValue("Keep my draft");
+  expect(screen.getByRole("button", { name: "Send message" })).toBeEnabled();
+  expect(model).toBeEnabled();
+});
+
 it("restores unsent text when returning to a conversation", async () => {
   setup();
   fireEvent.change(screen.getByLabelText("Your text"), {

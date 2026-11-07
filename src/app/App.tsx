@@ -978,6 +978,9 @@ export default function App({
               </span>
               <div className="run-bar">
                 <ModelPicker
+                  onCancel={() =>
+                    session.stop("Model loading cancelled. Your draft is kept.")
+                  }
                   writer={writer}
                   model={model}
                   status={session.status}

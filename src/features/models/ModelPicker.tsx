@@ -14,6 +14,7 @@ export function ModelPicker({
   supported,
   onSelect,
   onRemove,
+  onCancel,
   reasoning,
   reasoningAllowed,
   onReasoning,
@@ -29,6 +30,7 @@ export function ModelPicker({
   supported: boolean | null;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
+  onCancel: () => void;
 }) {
   const picker = useRef<HTMLDetailsElement>(null);
   const [cache, setCache] = useState<Record<string, boolean | null>>({});
@@ -133,7 +135,14 @@ export function ModelPicker({
               </label>
               <span className="model-row-action">
                 {item.id === model && status === "loading" ? (
-                  <LoadingStatus progress={progress} />
+                  <Button
+                    className="secondary icon-button"
+                    aria-label="Cancel model loading"
+                    title="Cancel model loading"
+                    onClick={onCancel}
+                  >
+                    <LoadingStatus progress={progress} />
+                  </Button>
                 ) : cache[item.id] === true ? (
                   <Button
                     className="secondary icon-button"
