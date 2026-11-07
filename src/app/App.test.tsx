@@ -605,3 +605,16 @@ it("cancels a pending model load from its row without losing the draft", async (
   expect(screen.getByRole("button", { name: "Send message" })).toBeEnabled();
   expect(model).toBeEnabled();
 });
+
+it("restores unsent text when returning to a conversation", async () => {
+  setup();
+  fireEvent.change(screen.getByLabelText("Your text"), {
+    target: { value: "Unsent draft" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+  expect(screen.getByLabelText("Your text")).toHaveValue("");
+  fireEvent.click(
+    screen.getAllByRole("button", { name: "Open chat: New chat" })[1],
+  );
+  expect(screen.getByLabelText("Your text")).toHaveValue("Unsent draft");
+});

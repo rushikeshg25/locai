@@ -1,5 +1,5 @@
 import { Button } from "./Button";
-import { useRef, useState, type ComponentPropsWithoutRef } from "react";
+import { memo, useRef, useState, type ComponentPropsWithoutRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 function CodeBlock({ children, ...props }: ComponentPropsWithoutRef<"pre">) {
@@ -29,7 +29,7 @@ function CodeBlock({ children, ...props }: ComponentPropsWithoutRef<"pre">) {
     </div>
   );
 }
-export function Markdown({
+export const Markdown = memo(function Markdown({
   text,
   sources = [],
 }: {
@@ -69,4 +69,4 @@ export function Markdown({
       </ReactMarkdown>
     </div>
   );
-}
+});

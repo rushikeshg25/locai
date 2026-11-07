@@ -122,7 +122,7 @@ Hover or keyboard-focus a conversation to reveal:
 
 Titles are generated from the first message when possible. Manually assigned titles are preserved.
 
-Use the header’s **Chat options** menu to export a conversation as Markdown or make it temporary. Temporary chats and unsent drafts disappear when the page reloads or closes.
+Use the header’s **Chat options** menu to export a conversation as Markdown or make it temporary. Switching chats preserves each unsent draft, its attachments, and pending edits in the current tab. Temporary chats and unsent drafts disappear when the page reloads or closes.
 
 ### Attachments and citations
 

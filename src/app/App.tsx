@@ -162,6 +162,15 @@ export default function App({
     };
   }, [chats]);
   const [resend, setResend] = useState<Message[] | null>(null);
+  const drafts = useRef(
+    new Map<
+      string,
+      { text: string; attachments: Attachment[]; resend: Message[] | null }
+    >(),
+  );
+  function rememberDraft() {
+    drafts.current.set(chat.id, { text, attachments, resend });
+  }
   const composer = useRef<HTMLTextAreaElement>(null);
   const scroll = useRef<HTMLDivElement>(null);
   const nearBottom = useRef(true);
@@ -255,15 +264,16 @@ export default function App({
     if (!window.confirm("Delete this conversation and its saved copy?")) return;
     try {
       forgetChat(id);
-      setChats((items) => {
-        const remaining = items.filter((item) => item.id !== id);
-        return remaining.length ? remaining : [newConversation()];
-      });
+      drafts.current.delete(id);
+      const remaining = chats.filter((item) => item.id !== id);
+      const next = remaining[0] ?? newConversation();
+      setChats(remaining.length ? remaining : [next]);
       if (id === chat.id) {
-        setActive("");
-        setText("");
-        replaceAttachments([]);
-        setResend(null);
+        const draft = drafts.current.get(next.id);
+        setActive(next.id);
+        setText(draft?.text ?? "");
+        replaceAttachments(draft?.attachments ?? []);
+        setResend(draft?.resend ?? null);
       }
     } catch {
       setFeedback(
@@ -272,6 +282,7 @@ export default function App({
     }
   }
   function newChat() {
+    rememberDraft();
     const next = newConversation();
     setChats((items) => [next, ...items]);
     setActive(next.id);
@@ -284,10 +295,13 @@ export default function App({
     setLatest(false);
   }
   function selectChat(id: string) {
+    if (id === chat.id) return;
+    rememberDraft();
+    const draft = drafts.current.get(id);
     setActive(id);
-    setText("");
-    replaceAttachments([]);
-    setResend(null);
+    setText(draft?.text ?? "");
+    replaceAttachments(draft?.attachments ?? []);
+    setResend(draft?.resend ?? null);
 
     nearBottom.current = true;
     setLatest(false);
@@ -339,6 +353,7 @@ export default function App({
       setFeedback((cause as Error).message);
       return;
     }
+    drafts.current.delete(chat.id);
     const user: Message = {
       id: crypto.randomUUID(),
       role: "user",

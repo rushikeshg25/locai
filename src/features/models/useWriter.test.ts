@@ -173,3 +173,17 @@ it.each(["GPU device lost", { message: "Failed to fetch runtime" }])(
     expect(result.current.status).toBe("idle");
   },
 );
+
+it("does not let an earlier load timeout unload a newer ready model", async () => {
+  vi.useFakeTimers();
+  const writer = fake();
+  vi.mocked(writer.load).mockImplementationOnce(() => new Promise(() => {}));
+  const { result } = renderHook(() => useWriter(writer));
+  act(() => {
+    void result.current.load("first");
+  });
+  act(() => vi.advanceTimersByTime(1000));
+  await act(() => result.current.load("second"));
+  act(() => vi.advanceTimersByTime(600_000));
+  expect(result.current.status).toBe("ready");
+});

@@ -41,7 +41,10 @@ test("reasoning streams separately, persists, and stays out of later context", a
   await page.getByLabel("Your text").press("Enter");
   await expect(page.locator(".assistant .markdown")).toHaveCount(2);
   const second = (await modelRequests(page))[1];
-  expect(second.messages[2].content).toBe("The answer is 42.");
+  expect(second.messages[1]).toEqual({
+    role: "assistant",
+    content: "The answer is 42.",
+  });
   expect(JSON.stringify(second.messages)).not.toContain("Check the arithmetic");
   await page.getByLabel("Chat options").click();
   await page.reload();

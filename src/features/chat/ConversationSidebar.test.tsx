@@ -34,3 +34,24 @@ it("searches titles and message contents and switches chats", () => {
   fireEvent.click(screen.getByRole("button", { name: "Open chat: Weekend" }));
   expect(select).toHaveBeenCalledWith(second.id);
 });
+
+it("orders recent chats by activity while keeping pinned chats first", () => {
+  const chats = [
+    { ...newConversation(), title: "Older", updatedAt: 1 },
+    { ...newConversation(), title: "Recent", updatedAt: 3 },
+    { ...newConversation(), title: "Pinned", updatedAt: 0, pinned: true },
+  ];
+  render(
+    <ConversationSidebar
+      chats={chats}
+      active={chats[0].id}
+      busy={false}
+      onSelect={vi.fn()}
+    />,
+  );
+  expect(
+    screen
+      .getAllByRole("button", { name: /^Open chat:/ })
+      .map((item) => item.getAttribute("aria-label")),
+  ).toEqual(["Open chat: Pinned", "Open chat: Recent", "Open chat: Older"]);
+});
