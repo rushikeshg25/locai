@@ -80,7 +80,10 @@ export function ConversationSidebar({
       .toLocaleLowerCase()
       .includes(query.trim().toLocaleLowerCase()),
   );
-  filtered.sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+  filtered.sort(
+    (a, b) =>
+      Number(!!b.pinned) - Number(!!a.pinned) || b.updatedAt - a.updatedAt,
+  );
   const menuChat = chats.find((chat) => chat.id === menu?.id);
   const [mobile, setMobile] = useState(
     () => window.matchMedia?.("(max-width: 900px)").matches ?? false,
