@@ -45,6 +45,7 @@ export function useWriter(writer: Writer) {
     setNotice(message);
   }
   async function load(model: string) {
+    clearTimeout(timer.current);
     const id = ++generation.current;
     setStatus("loading");
     setError("");
