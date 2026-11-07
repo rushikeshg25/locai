@@ -39,8 +39,11 @@ test("chat context, Markdown, attachments, branching and automatic persistence",
   await page.screenshot({ path: "/tmp/local-writer-conversation.png" });
   const second = (await modelRequests(page))[1];
   expect(external).toEqual([]);
-  expect(second.messages).toHaveLength(4);
-  expect(second.messages[1].content).toContain("The meeting is Friday.");
+  expect(second.messages).toHaveLength(3);
+  expect(
+    second.messages.map((message: { role: string }) => message.role),
+  ).toEqual(["user", "assistant", "user"]);
+  expect(second.messages[0].content).toContain("The meeting is Friday.");
   await page.getByRole("button", { name: "Retry", exact: true }).last().click();
   await expect(
     page
