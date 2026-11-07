@@ -81,7 +81,7 @@ it("fits complete sources into context and separates untrusted data from instruc
   };
   const fitted = fitSearch(
     request,
-    Array.from({ length: 4 }, () => ({ ...source, snippet: "x".repeat(200) })),
+    Array.from({ length: 4 }, () => ({ ...source, snippet: "x".repeat(400) })),
   );
   expect(fitted.request.webSources!.length).toBeLessThan(4);
   const budget = prepareMessages(fitted.request);

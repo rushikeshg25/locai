@@ -49,10 +49,10 @@ it("chat includes previous turns and does not apply rewrite instructions", () =>
       { role: "assistant", content: "A portable binary format." },
     ],
   });
-  expect(messages).toHaveLength(4);
-  expect(messages[0].content).toContain("You are Locai");
+  expect(messages).toHaveLength(3);
+  expect(messages.every((message) => message.role !== "system")).toBe(true);
   expect(messages[0].content).not.toContain("source_text field");
-  expect(messages[2].content).toBe("A portable binary format.");
+  expect(messages[1].content).toBe("A portable binary format.");
 });
 
 it("drops oldest complete turns and rejects an oversized latest message", () => {
@@ -66,14 +66,14 @@ it("drops oldest complete turns and rejects an oversized latest message", () => 
   const fitted = prepareMessages({
     ...base,
     history: [
-      { role: "user", content: "x".repeat(2500) },
+      { role: "user", content: "x".repeat(2800) },
       { role: "assistant", content: "Old reply" },
       { role: "user", content: "Recent" },
       { role: "assistant", content: "Recent reply" },
     ],
   });
   expect(fitted.omitted).toBe(2);
-  expect(fitted.messages[1].content).toBe("Recent");
+  expect(fitted.messages[0].content).toBe("Recent");
   expect(() => prepareMessages({ ...base, text: "x".repeat(5000) })).toThrow(
     /context budget/,
   );
