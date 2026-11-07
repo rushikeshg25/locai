@@ -188,3 +188,32 @@ it("requests a bounded local title without chat history or reasoning", async () 
   });
   expect(await writer.title("Hello")).toBeNull();
 });
+
+it("coalesces fast token bursts while preserving the complete final output", async () => {
+  vi.stubGlobal("Worker", FakeWorker);
+  runtime.create.mockResolvedValue({
+    chat: {
+      completions: {
+        create: async function* () {
+          for (let i = 0; i < 100; i++)
+            yield { choices: [{ delta: { content: "x" } }] };
+        },
+      },
+    },
+  });
+  const writer = new LocalWriter();
+  await writer.load("model", vi.fn());
+  const chunk = vi.fn();
+  await writer.generate(
+    {
+      mode: "chat",
+      text: "Hello",
+      action: "grammar",
+      terms: "",
+      instruction: "",
+    },
+    chunk,
+  );
+  expect(chunk.mock.calls.length).toBeLessThan(100);
+  expect(chunk).toHaveBeenLastCalledWith("x".repeat(100));
+});

@@ -108,10 +108,22 @@ export class LocalWriter implements Writer {
         });
         let text = "";
         let truncated = false;
-        for await (const part of stream) {
-          text += part.choices[0]?.delta.content ?? "";
-          truncated ||= part.choices[0]?.finish_reason === "length";
-          chunk(text);
+        let lastUpdate = -Infinity;
+        let published = "";
+        try {
+          for await (const part of stream) {
+            text += part.choices[0]?.delta.content ?? "";
+            truncated ||= part.choices[0]?.finish_reason === "length";
+            const now = performance.now();
+            if (text !== published && now - lastUpdate >= 100) {
+              chunk(text);
+              published = text;
+              lastUpdate = now;
+            }
+          }
+        } finally {
+          // Preserve the last tokens, including partial output on failure.
+          if (text !== published) chunk(text);
         }
         if (!text.trim() && !this.interrupted)
           throw new Error("The model returned no text. Try a shorter input.");
