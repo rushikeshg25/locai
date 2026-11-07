@@ -576,3 +576,15 @@ it("keeps a manually named empty chat when its first message is sent", async () 
     screen.getByRole("button", { name: "Open chat: My project" }),
   ).toBeInTheDocument();
 });
+
+it("keeps drafting and new chats available while a model loads", async () => {
+  const writer = setup();
+  vi.mocked(writer.load).mockImplementation(() => new Promise(() => {}));
+  fireEvent.click(screen.getByLabelText("Models"));
+  const model = await screen.findByRole("radio", { name: /Qwen 2.5 0.5B/ });
+  await waitFor(() => expect(model).toBeEnabled());
+  fireEvent.click(model);
+  expect(screen.getByLabelText("Your text")).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+  expect(screen.getAllByRole("button", { name: "New chat" })[0]).toBeEnabled();
+});
